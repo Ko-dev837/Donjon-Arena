@@ -1800,6 +1800,7 @@ window.G = window.G || {};
   window.addEventListener('keydown', e => {
     const top = sysStack[sysStack.length - 1];
     if (!top) return;
+    if (top.keyCapture && top.onKey) { if (top.onKey(e)) { e.preventDefault(); e.stopImmediatePropagation(); return; } }
     if (e.target && (e.target.tagName === 'INPUT' && e.target.type === 'text')) { if (e.key === 'Escape' && top.dismissable) { top.close(null); e.preventDefault(); } e.stopImmediatePropagation(); return; }
     if (e.key === 'Escape') { if (top.dismissable) { sfx('click'); top.close(null); } e.preventDefault(); e.stopImmediatePropagation(); return; }
     if (top.pick && /^[1-9]$/.test(e.key)) { top.pick(+e.key - 1); e.preventDefault(); e.stopImmediatePropagation(); return; }
@@ -1808,6 +1809,18 @@ window.G = window.G || {};
     e.stopImmediatePropagation();
   }, true);
   window.addEventListener('keyup', e => { if (sysStack.length) e.stopImmediatePropagation(); }, true);
+
+  // ---- rappels de touches (HUD + boutons d'action) selon les touches personnalisées ----
+  function refreshKeyHints() {
+    const KB = G.Keys; if (!KB) return;
+    const L = (id) => KB.labelOf(id);
+    const kb = (t) => `<span class="ds-kbd">${esc(t)}</span>`;
+    const hk = $('hud-keys');
+    if (hk) hk.innerHTML = `<span>${kb(L('up'))}${kb(L('left'))}${kb(L('down'))}${kb(L('right'))} bouger</span><span>${kb(L('cast1'))}${kb(L('cast2'))}${kb(L('cast3'))} sorts</span><span>${kb(L('dash'))} roulade</span><span>${kb(L('super'))} ultime</span><span>${kb(L('potion1'))}${kb(L('potion2'))} potions</span><span>${kb(L('pause'))} pause</span>`;
+    ['cast1', 'cast2', 'cast3', 'super', 'dash', 'potion1', 'potion2'].forEach(id => { const b = $('btn-' + id); const k = b && b.querySelector('.kkey'); if (k) k.textContent = L(id); });
+  }
+  if (G.bus && G.bus.on) G.bus.on('keysChanged', refreshKeyHints);
+  setTimeout(refreshKeyHints, 0);
 
   // ---- notifications de butin colorées par rareté ----
   UI.notify = function (o) {
@@ -1936,9 +1949,17 @@ window.G = window.G || {};
     }
     if (tab === 'controles') {
       const K = (keys, txt) => `<div class="kb-row"><span class="kb-keys">${keys.map(k => `<span class="ds-kbd">${esc(k)}</span>`).join('')}</span><span class="kb-txt">${esc(txt)}</span></div>`;
-      return `<div class="ds-section-title">${ico('keyboard', 16)}Clavier & souris</div><div class="kb-list">` +
-        K(['Z', 'Q', 'S', 'D'], 'Se déplacer (ou flèches)') + K(['1', '2', '3'], 'Sorts (attaque, compétences)') + K(['Clic G', 'Clic D'], 'Sort 2 / Sort 3 vers le curseur') +
-        K(['Espace'], 'Roulade / esquive parfaite') + K(['X'], 'Ultime') + K(['R', 'F'], 'Potion de soin / de mana') + K(['Échap', 'P'], 'Pause') + `</div>` +
+      const KB = G.Keys;
+      const groups = [['move', 'Déplacements'], ['combat', 'Combat'], ['other', 'Divers']];
+      const binds = KB ? groups.map(([g, gl]) => `<div class="kbr-group">${esc(gl)}</div>` + KB.actions().filter(a => a.group === g).map(a => {
+        const b = KB.get(a.id);
+        return `<div class="kbr-row"><span class="kbr-lbl">${esc(a.label)}</span><span class="kbr-keys">${[0, 1].map(i => `<button type="button" class="kbr-key ds-kbd${b[i] ? '' : ' is-empty'}" data-bind="${a.id}" data-slot="${i}" aria-label="${esc(a.label)} : touche ${i + 1}">${esc(b[i] ? KB.label(b[i]) : '—')}</button>`).join('')}</span></div>`;
+      }).join('')).join('') : '';
+      return `<div class="ds-section-title">${ico('keyboard', 16)}Touches du clavier</div>
+        <div class="kbr-help">Clique sur une touche puis appuie sur la nouvelle. <b>Échap</b> annule, <b>Retour arrière</b> efface. Chaque action peut avoir deux touches.</div>
+        <div class="kbr-list">${binds}</div>
+        <div class="set-actions"><button type="button" class="ds-btn ds-btn--sm" data-act="keys-reset"><span class="ds-btn__icon">${ico('refresh', 15)}</span><span class="ds-btn__label">Touches par défaut</span></button></div>
+        <div class="kb-list">` + K(['Clic G', 'Clic D'], 'Compétence 2 / Compétence 3 vers le curseur') + `</div>` +
         `<div class="ds-section-title">${ico('touch', 16)}Tactile</div>` +
         rowHTML('joystick', 'Taille du joystick', '', ctlSeg('joySize', [['s', 'Petit'], ['m', 'Moyen'], ['l', 'Grand']]), 'set-col') +
         rowHTML('target2', 'Taille des boutons', '', ctlSeg('btnSize', [['s', 'Petits'], ['m', 'Moyens'], ['l', 'Grands']]), 'set-col') +
@@ -2010,7 +2031,27 @@ window.G = window.G || {};
         else if (t.matches('input[type=checkbox][data-mute]')) { if (isMuted() === t.checked) toggleSound(); draw(0); }
         else if (t.matches('input[type=range][data-set]')) sfx('click');
       });
+      const stopCapture = () => { entry.keyCapture = null; if (G.Keys) G.Keys.capturing = false; body.querySelectorAll('.kbr-key.is-capturing').forEach(x => x.classList.remove('is-capturing')); };
+      entry.onKey = (e) => {
+        const c = entry.keyCapture; if (!c || !G.Keys) return false;
+        if (e.type && e.type !== 'keydown') return true;
+        const k = String(e.key || '').toLowerCase();
+        if (k === 'escape') { stopCapture(); draw(0); return true; }
+        if (k === 'backspace' || k === 'delete') { G.Keys.set(c.id, c.slot, null); stopCapture(); draw(0); return true; }
+        if (!k || k === 'unidentified' || k === 'dead') return true;
+        const stolen = G.Keys.set(c.id, c.slot, k);
+        stopCapture(); draw(0); sfx('click');
+        if (stolen && stolen !== c.id) { const a = G.Keys.actions().find(x => x.id === stolen); UI.toast('« ' + G.Keys.label(k) + ' » retirée de : ' + (a ? a.label : stolen)); }
+        return true;
+      };
       body.addEventListener('click', e => {
+        const kb = e.target.closest('[data-bind]');
+        if (kb && G.Keys) {
+          sfx('click'); stopCapture();
+          entry.keyCapture = { id: kb.dataset.bind, slot: +kb.dataset.slot }; G.Keys.capturing = true;
+          kb.classList.add('is-capturing'); kb.textContent = 'Appuie…';
+          return;
+        }
         const sg = e.target.closest('[data-seg]');
         if (sg) {
           sfx('click'); setSetting(sg.dataset.seg, sg.dataset.v);
@@ -2020,6 +2061,7 @@ window.G = window.G || {};
         const a = e.target.closest('[data-act]');
         if (!a) return;
         const act = a.dataset.act;
+        if (act === 'keys-reset') { sfx('click'); if (G.Keys) G.Keys.reset(); draw(0); UI.toast('Touches par défaut rétablies.'); return; }
         if (act === 'test-sound') { try { G.sfx.unlock && G.sfx.unlock(); } catch (_) {} sfx('levelup'); }
         else if (act === 'tutorial') { sfx('click'); entry.close(null); setTimeout(() => UI.openTutorial(0), 120); }
         else if (act === 'coach-reset') { sfx('click'); try { localStorage.removeItem(COACH_KEY); } catch (_) {} setSetting('hints', true); UI.toast('Les bulles d’aide réapparaîtront au prochain donjon.'); draw(0); }
@@ -2042,7 +2084,7 @@ window.G = window.G || {};
           UI.toast('Sauvegarde effacée.');
         }
       });
-      entry.onClose = () => clearTimeout(dzTimer);
+      entry.onClose = () => { clearTimeout(dzTimer); if (G.Keys) G.Keys.capturing = false; };
       draw(0);
     }, { dismissable: true, cls: 'settings-modal' });
   };

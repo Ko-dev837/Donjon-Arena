@@ -961,3 +961,17 @@ html.ds-reduce-motion .hb-ring, html.ds-reduce-motion .logo-l2::after, html.ds-r
 .w-pips { margin-top: 4px; }
 .w-row .ds-stat__label { display: inline-flex; align-items: center; gap: 6px; }
 .w-row .ds-stat__label svg { color: var(--ds-text-3); }
+
+/* ---- touches personnalisables (Paramètres → Contrôles) ---- */
+.kbr-help { font-size: 13px; color: var(--ds-text-2, #9fb0d0); margin: 2px 0 10px; line-height: 1.45; }
+.kbr-list { display: flex; flex-direction: column; margin-bottom: 12px; }
+.kbr-group { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ds-text-3, #7d8db0); margin: 12px 0 4px; }
+.kbr-row { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--ds-line); }
+.kbr-lbl { flex: 1; min-width: 0; font-size: 14px; }
+.kbr-keys { display: flex; gap: 8px; }
+.kbr-key { min-width: 64px; height: 34px; padding: 0 10px; cursor: pointer; font: 700 13px/1 var(--ds-font-display, inherit); transition: transform .12s, box-shadow .12s, border-color .12s; }
+.kbr-key:hover { transform: translateY(-1px); border-color: var(--ds-accent, #4cc3ff); }
+.kbr-key.is-empty { opacity: .45; }
+.kbr-key.is-capturing { border-color: var(--ds-gold, #ffc94a); color: var(--ds-gold, #ffc94a); box-shadow: 0 0 0 2px rgba(255, 201, 74, .35); animation: kbr-pulse 1s ease-in-out infinite; }
+@keyframes kbr-pulse { 50% { box-shadow: 0 0 0 5px rgba(255, 201, 74, .12); } }
+@media (max-width: 520px) { .kbr-key { min-width: 52px; } .kbr-lbl { font-size: 13px; } }

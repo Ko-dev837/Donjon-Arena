@@ -183,19 +183,71 @@ window.G = window.G || {};
   };
   G.input = input;
 
-  const KEYMAP = {
-    '1': 'cast1', '&': 'cast1', '2': 'cast2', 'é': 'cast2', '3': 'cast3', '"': 'cast3',
-    ' ': 'dash', 'shift': 'dash', 'x': 'super', '4': 'super', "'": 'super',
-    'r': 'potion1', 'f': 'potion2', 'escape': 'pause', 'p': 'pause',
+  // ---- touches personnalisables (Paramètres → Contrôles) ----
+  const KEY_STORE = 'donjon-keys-v1';
+  const KEY_ACTIONS = [
+    { id: 'up', label: 'Avancer', group: 'move' }, { id: 'down', label: 'Reculer', group: 'move' },
+    { id: 'left', label: 'Aller à gauche', group: 'move' }, { id: 'right', label: 'Aller à droite', group: 'move' },
+    { id: 'cast1', label: 'Attaque de base (sort 1)', group: 'combat' }, { id: 'cast2', label: 'Compétence 2', group: 'combat' },
+    { id: 'cast3', label: 'Compétence 3', group: 'combat' }, { id: 'super', label: 'Ultime', group: 'combat' },
+    { id: 'dash', label: 'Roulade / esquive', group: 'combat' },
+    { id: 'potion1', label: 'Potion de soin', group: 'other' }, { id: 'potion2', label: 'Potion de mana', group: 'other' },
+    { id: 'pause', label: 'Pause', group: 'other' },
+  ];
+  const KEY_DEFAULTS = {
+    up: ['z', 'arrowup'], down: ['s', 'arrowdown'], left: ['q', 'arrowleft'], right: ['d', 'arrowright'],
+    cast1: ['1', '&'], cast2: ['2', 'é'], cast3: ['3', '"'], super: ['x', '4'], dash: [' ', 'shift'],
+    potion1: ['r', null], potion2: ['f', null], pause: ['escape', 'p'],
   };
+  // claviers QWERTY : W/A remplacent Z/Q si l'utilisateur n'a rien personnalisé
+  try { if (/^en|^de|^es|^it|^pt|^nl/i.test(navigator.language || '') && !localStorage.getItem(KEY_STORE)) { KEY_DEFAULTS.up = ['w', 'arrowup']; KEY_DEFAULTS.left = ['a', 'arrowleft']; } } catch (_) {}
+  let keyBinds = {};
+  const keyOf = {}; // touche → action
+  function rebuildKeyIndex() {
+    for (const k in keyOf) delete keyOf[k];
+    KEY_ACTIONS.forEach(a => (keyBinds[a.id] || []).forEach(k => { if (k) keyOf[k] = a.id; }));
+  }
+  function loadKeys() {
+    keyBinds = {};
+    let saved = null; try { saved = JSON.parse(localStorage.getItem(KEY_STORE) || 'null'); } catch (_) { saved = null; }
+    KEY_ACTIONS.forEach(a => {
+      const v = saved && Array.isArray(saved[a.id]) ? saved[a.id] : KEY_DEFAULTS[a.id];
+      keyBinds[a.id] = [v[0] || null, v[1] || null];
+    });
+    rebuildKeyIndex();
+  }
+  function saveKeys() { try { localStorage.setItem(KEY_STORE, JSON.stringify(keyBinds)); } catch (_) {} rebuildKeyIndex(); if (G.bus) G.bus.emit('keysChanged', { binds: keyBinds }); }
+  const KEY_NAMES = { ' ': 'Espace', 'arrowup': '↑', 'arrowdown': '↓', 'arrowleft': '←', 'arrowright': '→', 'shift': 'Maj', 'control': 'Ctrl', 'alt': 'Alt', 'escape': 'Échap', 'enter': 'Entrée', 'tab': 'Tab', 'backspace': 'Retour', 'capslock': 'Verr. Maj', 'meta': 'Cmd' };
+  G.Keys = {
+    actions: () => KEY_ACTIONS.slice(),
+    get: (id) => (keyBinds[id] || [null, null]).slice(),
+    actionOf: (k) => keyOf[String(k || '').toLowerCase()] || null,
+    label: (k) => (k == null ? '—' : (KEY_NAMES[k] || (k.length === 1 ? k.toUpperCase() : k.charAt(0).toUpperCase() + k.slice(1)))),
+    labelOf: (id) => { const b = keyBinds[id] || []; return G.Keys.label(b[0] || b[1]); },
+    /** assigne une touche (slot 0 ou 1) ; retire cette touche des autres actions ; renvoie l'action qui la perd */
+    set(id, slot, key) {
+      if (!keyBinds[id]) return null;
+      key = key == null ? null : String(key).toLowerCase();
+      let stolen = null;
+      if (key) KEY_ACTIONS.forEach(a => { const b = keyBinds[a.id]; for (let i = 0; i < 2; i++) if (b[i] === key && !(a.id === id && i === slot)) { b[i] = null; stolen = a.id; } });
+      keyBinds[id][slot] = key;
+      saveKeys(); return stolen;
+    },
+    reset() { try { localStorage.removeItem(KEY_STORE); } catch (_) {} loadKeys(); saveKeys(); },
+    isDown: (id) => (keyBinds[id] || []).some(k => k && keys[k]),
+    capturing: false, // vrai pendant la saisie d'une nouvelle touche dans les paramètres
+  };
+  loadKeys();
   addEventListener('keydown', e => {
+    if (G.Keys.capturing) return;
     const tag = e.target && e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     const k = e.key.toLowerCase();
     if (k === ' ' || k.startsWith('arrow')) e.preventDefault();
     if (e.repeat) { keys[k] = true; return; }
     keys[k] = true;
-    if (KEYMAP[k]) input.fire(KEYMAP[k], { dir: null });
+    const act = keyOf[k];
+    if (act && !/^(up|down|left|right)$/.test(act)) input.fire(act, { dir: null });
   });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
@@ -244,10 +296,10 @@ window.G = window.G || {};
   function updateMove() {
     let x = 0, z = 0;
     if (input.enabled) {
-      if (keys['z'] || keys['w'] || keys['arrowup']) z -= 1;
-      if (keys['s'] || keys['arrowdown']) z += 1;
-      if (keys['q'] || keys['a'] || keys['arrowleft']) x -= 1;
-      if (keys['d'] || keys['arrowright']) x += 1;
+      if (G.Keys.isDown('up')) z -= 1;
+      if (G.Keys.isDown('down')) z += 1;
+      if (G.Keys.isDown('left')) x -= 1;
+      if (G.Keys.isDown('right')) x += 1;
       if (joy.id !== null) { x = joy.dx; z = joy.dy; }
     }
     const l = Math.hypot(x, z);

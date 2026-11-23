@@ -1627,7 +1627,9 @@ window.G = window.G || {};
   // ===================================================================
   const useSkills = () => !!(G.Skills && typeof G.Skills.cast === 'function');
   const CAST_SLOTS = { cast1: 1, cast2: 1, cast3: 1, super: 1 };
-  const KEY2SLOT = { '1': 'cast1', '&': 'cast1', '2': 'cast2', 'é': 'cast2', '3': 'cast3', '"': 'cast3', 'x': 'super', '4': 'super', "'": 'super' };
+  // touches personnalisables : G.Keys (core.js) ; seules les actions de sort se chargent en maintenant la touche
+  const SLOT_ACTS = { cast1: 1, cast2: 1, cast3: 1, super: 1 };
+  const KEY2SLOT = new Proxy({}, { get: (_, k) => { const a = G.Keys && G.Keys.actionOf ? G.Keys.actionOf(k) : null; return a && SLOT_ACTS[a] ? a : undefined; } });
   const BTN2SLOT = { 'btn-cast1': 'cast1', 'btn-cast2': 'cast2', 'btn-cast3': 'cast3', 'btn-super': 'super' };
   const hold = { cast1: {}, cast2: {}, cast3: {}, super: {} };   // {kdown, ptT0}
   const nowS = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
