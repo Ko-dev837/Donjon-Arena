@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#060912">
+<title>Donjon Arena 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Lilita+One&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/ds.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/class-select.css">
+</head>
+<body>
+
+<!-- Écran de chargement (retiré par G.UI.init ; message clair si three.js ne charge pas) -->
+<div id="boot" class="boot" role="status">
+  <div class="boot-bg" aria-hidden="true"><i class="boot-ring r1"></i><i class="boot-ring r2"></i><i class="boot-ring r3"></i></div>
+  <div class="boot-card">
+    <div class="boot-logo" aria-hidden="true">
+      <svg viewBox="0 0 64 64" width="64" height="64"><path class="bl-hex" d="M32 3l25 14.5v29L32 61 7 46.5v-29z"/><path class="bl-sw" d="M32 14v30M25 38h14M32 44v6"/><circle class="bl-gem" cx="32" cy="12" r="3"/></svg>
+    </div>
+    <div class="boot-title">DONJON <b>ARENA</b></div>
+    <div class="boot-sub">Initialisation du système</div>
+    <div class="boot-bar"><i id="boot-bar-fill"></i></div>
+    <div class="boot-row"><p class="boot-msg" id="boot-msg">Ouverture du portail…</p><span class="boot-pct" id="boot-pct">0 %</span></div>
+    <p class="boot-tip" id="boot-tip"></p>
+    <div class="boot-err" id="boot-err">
+      <b>Impossible de démarrer le jeu</b>
+      <span id="boot-err-txt">La bibliothèque 3D (three.js) n'a pas pu être chargée. Vérifie ta connexion Internet puis réessaie.</span>
+      <button type="button" class="boot-retry" onclick="location.reload()">Réessayer</button>
+    </div>
+  </div>
+</div>
+
+<div id="ui">
+
+  <!-- ============================ TITRE ============================ -->
+  <section id="screen-title" class="screen screen-title" data-screen="title">
+    <canvas class="title-canvas" id="title-canvas" aria-hidden="true"></canvas>
+    <div class="title-vignette" aria-hidden="true"></div>
+    <div class="title-top">
+      <span class="title-ver" id="title-ver">v4 · Éveil</span>
+      <div class="title-top-btns">
+        <button class="ds-icon-btn btn-sound" id="title-sound" type="button" aria-label="Son"></button>
+        <button class="ds-icon-btn" id="title-settings" type="button" aria-label="Paramètres"></button>
+      </div>
+    </div>
+    <div class="title-wrap">
+      <div class="logo" id="logo">
+        <div class="logo-emblem" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><defs><linearGradient id="lg-em" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bff3ff"/><stop offset="1" stop-color="#2aa6e0"/></linearGradient></defs>
+            <path class="em-hex" d="M60 6l47 27v54L60 114 13 87V33z"/><path class="em-hex2" d="M60 18l36 21v42L60 102 24 81V39z"/>
+            <path class="em-sw" d="M60 28v52M48 70h24M60 80v12"/><path class="em-sw2" d="M60 28l-5 9v33h10V37z"/><circle class="em-gem" cx="60" cy="24" r="4"/></svg>
+        </div>
+        <div class="logo-l1">DONJON</div>
+        <div class="logo-l2" data-text="ARENA">ARENA</div>
+        <div class="logo-l3"><i></i><span>3D · Éveil</span><i></i></div>
+      </div>
+      <p class="title-tag">Franchis les portails. Monte en rang. Éveille ta puissance.</p>
+
+      <div class="title-hero" id="title-hero" hidden></div>
+      <div class="title-btns" id="title-btns">
+        <button class="ds-btn ds-btn--primary ds-btn--xl ds-btn--block" id="btn-continue" type="button"><span class="ds-btn__icon" data-ico="play"></span><span class="ds-btn__label">Continuer</span></button>
+        <button class="ds-btn ds-btn--xl ds-btn--block" id="btn-new" type="button"><span class="ds-btn__icon" data-ico="plus"></span><span class="ds-btn__label">Nouvelle partie</span></button>
+        <div class="title-btns-row">
+          <button class="ds-btn ds-btn--lg" id="btn-settings" type="button"><span class="ds-btn__icon" data-ico="settings"></span><span class="ds-btn__label">Paramètres</span></button>
+          <button class="ds-btn ds-btn--lg" id="btn-tutorial" type="button"><span class="ds-btn__icon" data-ico="tutorial"></span><span class="ds-btn__label">Tutoriel</span></button>
+        </div>
+        <button class="ds-btn ds-btn--ghost ds-btn--sm" id="btn-credits" type="button"><span class="ds-btn__icon" data-ico="scroll"></span><span class="ds-btn__label">Crédits</span></button>
+      </div>
+      <p class="title-save" id="title-save-info"></p>
+    </div>
+    <div class="title-foot"><span>Jeu original</span><span class="dot"></span><span>Tactile · Clavier + souris</span></div>
+  </section>
+
+  <!-- ====================== CRÉATION ====================== -->
+  <section id="screen-create" class="screen screen-menu" data-screen="create">
+    <div id="create-cs" class="create-cs"></div>
+    <div class="menu-wrap create-wrap">
+      <header class="menu-head">
+        <button class="ds-icon-btn" id="create-back" type="button" aria-label="Retour"></button>
+        <h1 class="menu-title">Crée ton héros</h1>
+        <span class="head-spacer"></span>
+      </header>
+      <div class="ds-window create-name">
+        <div class="ds-window__body ds-field">
+          <label for="create-name" class="ds-label">Nom du personnage</label>
+          <input id="create-name" class="ds-input" type="text" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Ex : Goro">
+        </div>
+      </div>
+      <div class="ds-section-title">Choisis ta classe</div>
+      <div class="class-grid" id="class-grid"></div>
+      <div class="speech" id="create-preview">
+        <div class="speech-ava" id="create-preview-ava"></div>
+        <div class="speech-bubble" id="create-preview-text"></div>
+      </div>
+      <p class="create-warn" id="create-warn"></p>
+      <button class="ds-btn ds-btn--primary ds-btn--xl ds-btn--block" id="create-start" type="button">Commencer</button>
+    </div>
+  </section>
+
+  <!-- ============================ CAMP (HUB) ============================ -->
+  <section id="screen-hub" class="screen screen-hub" data-screen="hub">
+    <div class="hub-bg" aria-hidden="true"><i class="hb-ring hb-r1"></i><i class="hb-ring hb-r2"></i><i class="hb-grid"></i></div>
+    <div class="camp" id="camp">
+      <header class="camp-head" id="hub-hero">
+        <div class="ch-portrait" id="hub-portrait"></div>
+        <div class="ch-id">
+          <div class="ch-line1"><span class="ch-name" id="hub-name">Héros</span><span class="ch-rank" id="hub-rank"></span></div>
+          <div class="ch-class"><span class="ch-cico" id="hub-cico"></span><span id="hub-class">Guerrier</span><span class="ch-sep"></span><span class="ch-lvl">Niv. <b id="hub-level">1</b></span></div>
+          <div class="ch-xp"><div class="ds-bar ds-bar--xp ds-bar--thin"><i class="ds-bar__fill" id="hub-xp-fill" style="width:0%"></i></div><span class="ch-xp-t" id="hub-xp-text">0 / 0 XP</span></div>
+        </div>
+        <div class="ch-right">
+          <div class="ch-res">
+            <span class="ds-chip ch-power" id="hub-power" title="Puissance"><span data-ico="bolt"></span><b>0</b></span>
+            <span class="ds-chip ds-chip--gold ch-gold" title="Or"><span data-ico="gold"></span><b id="hub-gold">0</b></span>
+            <span class="ds-chip ch-gems" id="hub-gems" title="Gemmes" hidden><span data-ico="gem"></span><b id="hub-gems-n">0</b></span>
+          </div>
+          <div class="ch-btns">
+            <button class="ds-icon-btn ds-icon-btn--sm" id="hub-forge" type="button" aria-label="Forge des armes" title="Forge des armes"></button>
+            <button class="ds-icon-btn ds-icon-btn--sm btn-sound" id="hub-sound" type="button" aria-label="Son"></button>
+            <button class="ds-icon-btn ds-icon-btn--sm" id="hub-settings" type="button" aria-label="Paramètres" title="Paramètres"></button>
+          </div>
+        </div>
+      </header>
+      <nav class="camp-tabs" id="camp-tabs" role="tablist" aria-label="Menu du camp"></nav>
+      <main class="camp-main ds-scroll" id="hub-content">
+        <div class="camp-panel-head" id="camp-panel-head"></div>
+        <div class="camp-panel" id="camp-panel" role="tabpanel"></div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ============================ FORGE ============================ -->
+  <section id="screen-forge" class="screen screen-menu screen-forge" data-screen="forge">
+    <div class="menu-wrap forge-wrap">
+      <header class="menu-head">
+        <button class="ds-icon-btn" id="forge-back" type="button" aria-label="Retour"></button>
+        <div class="menu-titles"><h1 class="menu-title">La Forge</h1><p class="menu-sub">Améliore tes armes contre de l'or</p></div>
+        <span class="ds-chip ds-chip--gold"><span data-ico="gold"></span><b id="forge-gold">0</b></span>
+      </header>
+      <div class="forge-grid" id="forge-list"></div>
+    </div>
+  </section>
+
+  <!-- ============================ HUD (JEU) ============================ -->
+  <section id="screen-game" class="screen-hud" data-screen="game">
+    <div id="hud">
+      <div class="hud-player" id="hud-player">
+        <div class="hud-ava" id="hud-ava"><span class="hud-ava-i" id="hud-ava-i"></span><span class="hud-lvl" id="hud-level">1</span></div>
+        <span class="hud-rank" id="hud-rank"></span>
+        <div class="hud-pinfo">
+          <div class="hud-toprow"><div class="hud-name" id="hud-name">Héros</div><div class="hud-gold"><span data-ico="gold"></span><b id="hud-gold">0</b></div></div>
+          <div class="hud-hp ds-bar ds-bar--hp"><i class="hud-hp-ghost ds-bar__ghost" id="hud-hp-ghost"></i><i class="hud-hp-fill ds-bar__fill" id="hud-hp-fill"></i><span class="ds-bar__text" id="hud-hp-text">100 / 100</span></div>
+          <div class="hud-mp ds-bar ds-bar--mp" id="hud-mp"><i class="ds-bar__fill" id="hud-mp-fill"></i><span class="ds-bar__text" id="hud-mp-text">0 / 0</span></div>
+          <div class="hud-xp ds-bar ds-bar--xp"><i class="ds-bar__fill" id="hud-xp-fill"></i></div>
+        </div>
+      </div>
+      <div class="hud-status" id="hud-status">
+        <span class="hud-minions" id="hud-minions"></span>
+        <div class="hud-buffs" id="hud-buffs"></div>
+      </div>
+
+      <div class="hud-info" id="hud-info">
+        <div class="hud-dname" id="hud-dungeon"></div>
+        <div class="hud-meta"><span id="hud-room"></span><span class="hud-timer"><span data-ico="timer"></span><span id="hud-timer">0:00</span></span></div>
+        <div class="hud-obj" id="hud-objective"></div>
+      </div>
+
+      <div class="hud-boss" id="hud-boss">
+        <div class="hud-boss-top"><span class="hud-boss-ico" data-ico="skull"></span><span class="hud-boss-name" id="hud-boss-name">Boss</span></div>
+        <div class="hud-boss-bar"><i class="hud-boss-trail" id="hud-boss-trail"></i><i class="hud-boss-fill" id="hud-boss-fill"></i></div>
+      </div>
+
+      <div class="hud-tr" id="hud-tr">
+        <button class="hud-pause" id="btn-pause" type="button" aria-label="Pause"></button>
+        <div class="hud-potions" id="hud-potions">
+          <button class="potion" id="btn-potion1" type="button"><span class="potion-ico"></span><b class="potion-n">0</b><span class="kkey">R</span></button>
+          <button class="potion" id="btn-potion2" type="button"><span class="potion-ico"></span><b class="potion-n">0</b><span class="kkey">F</span></button>
+        </div>
+      </div>
+
+      <div class="hud-actions" id="hud-actions">
+        <button class="act act-dash" id="btn-dash" type="button"><span class="act-ring"></span><span class="act-face"><span class="act-ico"></span><span class="act-lbl">Roulade</span></span><span class="act-cd"></span><span class="kkey">Esp</span></button>
+        <button class="act act-super" id="btn-super" type="button"><span class="super-ring"></span><span class="act-ring"></span><span class="act-face"><span class="act-ico" id="btn-super-ico">🌪️</span><span class="act-lbl">Ultime</span></span><span class="act-cd"></span><span class="act-mana"></span><span class="act-lock"></span><span class="kkey">X</span></button>
+        <button class="act act-dague" id="btn-cast2" type="button"><span class="act-ring"></span><span class="act-face"><span class="act-ico">🗡️</span><span class="act-lbl">Dague</span></span><span class="act-cd"></span><span class="act-mana"></span><span class="act-lock"></span><span class="kkey">2</span></button>
+        <button class="act act-epee" id="btn-cast1" type="button"><span class="act-ring"></span><span class="act-face"><span class="act-ico">⚔️</span><span class="act-lbl">Épée</span></span><span class="act-cd"></span><span class="act-mana"></span><span class="act-lock"></span><span class="kkey">1</span></button>
+        <button class="act act-feu" id="btn-cast3" type="button"><span class="act-ring"></span><span class="act-face"><span class="act-ico">🔥</span><span class="act-lbl">Boule de feu</span></span><span class="act-cd"></span><span class="act-mana"></span><span class="act-lock"></span><span class="kkey">3</span></button>
+      </div>
+
+      <div class="hud-keys" id="hud-keys">
+        <span><span class="ds-kbd">ZQSD</span> bouger</span><span><span class="ds-kbd">1</span><span class="ds-kbd">2</span><span class="ds-kbd">3</span> sorts</span><span><span class="ds-kbd">Espace</span> roulade</span><span><span class="ds-kbd">X</span> ultime</span><span><span class="ds-kbd">R</span><span class="ds-kbd">F</span> potions</span><span><span class="ds-kbd">Échap</span> pause</span>
+      </div>
+      <div class="hud-coach" id="hud-coach" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============================ RÉSULTATS ============================ -->
+  <section id="screen-results" class="screen screen-results" data-screen="results">
+    <div class="res-fx" aria-hidden="true"><i class="res-rays"></i><i class="res-glow"></i></div>
+    <div class="results-card ds-window" id="results-card">
+      <div class="res-head">
+        <div class="res-kicker" id="res-kicker">Donjon terminé</div>
+        <div class="res-ribbon" id="res-title">VICTOIRE</div>
+        <div class="res-dungeon" id="res-dungeon"></div>
+      </div>
+      <div class="res-stars" id="res-stars"></div>
+      <div class="res-badges" id="res-badges"></div>
+      <div class="res-body">
+        <div class="res-stats" id="res-stats"></div>
+        <div class="res-chart" id="res-chart"></div>
+        <div class="res-loot" id="res-loot"></div>
+        <div class="res-level" id="res-level"></div>
+      </div>
+      <div class="res-btns">
+        <button class="ds-btn ds-btn--lg" id="res-retry" type="button">Rejouer</button>
+        <button class="ds-btn ds-btn--primary ds-btn--lg" id="res-hub" type="button">Retour au camp</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ OVERLAYS ============================ -->
+  <div class="toasts" id="ov-toasts"></div>
+  <div class="notifs" id="ov-notify" aria-live="polite"></div>
+  <div class="sys-tip ds-tooltip" id="ui-tooltip" role="tooltip"></div>
+  <div class="sys-layer" id="ov-sys"></div>
+  <div class="ov-banner" id="ov-banner"><div class="ov-banner-in" id="ov-banner-in"></div></div>
+
+  <div class="ov-levelup" id="ov-levelup">
+    <div class="lu-rays"></div>
+    <div class="lu-box">
+      <div class="lu-top">Niveau supérieur</div>
+      <div class="lu-hex"><div class="lu-num" id="lu-num">2</div></div>
+      <ul class="lu-lines" id="lu-lines"></ul>
+    </div>
+  </div>
+
+  <!-- Coffre piégé -->
+  <div class="ov-modal" id="ov-chest">
+    <div class="ds-window modal-card chest-card">
+      <div class="ds-window__header">
+        <div class="ds-window__icon chest-ico" id="chest-ico"></div>
+        <div class="ds-window__titles"><h2 class="ds-window__title">Coffre piégé</h2><p class="ds-window__subtitle chest-rule" id="chest-rule">Trouve le code magique entre 1 et 20.</p></div>
+      </div>
+      <div class="ds-window__body">
+        <div class="chest-tries" id="chest-tries"></div>
+        <div class="chest-msg" id="chest-msg">Choisis un nombre !</div>
+        <div class="chest-grid" id="chest-grid"></div>
+        <button class="ds-btn ds-btn--primary ds-btn--lg ds-btn--block" id="chest-continue" type="button">Continuer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div class="ov-modal" id="ov-pause">
+    <div class="ds-window modal-card pause-card">
+      <div class="ds-window__header">
+        <div class="ds-window__icon" data-ico="pause"></div>
+        <div class="ds-window__titles"><h2 class="ds-window__title pause-title">Pause</h2><p class="ds-window__subtitle" id="pause-sub">Le temps est suspendu</p></div>
+        <div class="ds-window__actions"><button class="ds-icon-btn ds-icon-btn--sm btn-sound" id="pause-sound-ico" type="button" aria-label="Son"></button></div>
+      </div>
+      <div class="ds-window__body">
+        <div class="pause-stats" id="pause-stats"></div>
+        <div class="pause-btns">
+          <button class="ds-btn ds-btn--primary ds-btn--lg ds-btn--block" id="pause-resume" type="button"><span class="ds-btn__icon" data-ico="play"></span><span class="ds-btn__label">Reprendre</span></button>
+          <button class="ds-btn ds-btn--block" id="pause-settings" type="button"><span class="ds-btn__icon" data-ico="settings"></span><span class="ds-btn__label">Paramètres</span></button>
+          <div class="pause-row">
+            <button class="ds-btn ds-btn--block" id="pause-restart" type="button"><span class="ds-btn__icon" data-ico="restart"></span><span class="ds-btn__label">Recommencer</span></button>
+            <button class="ds-btn ds-btn--danger ds-btn--block" id="pause-quit" type="button"><span class="ds-btn__icon" data-ico="exit"></span><span class="ds-btn__label">Quitter</span></button>
+          </div>
+          <button class="ds-btn ds-btn--ghost ds-btn--sm btn-sound-txt" id="pause-sound" type="button">Son : activé</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* Garde-fou de démarrage : three.js absent => message clair ; progression du chargement ; astuce */
+(function () {
+  var boot = document.getElementById('boot'), msg = document.getElementById('boot-msg');
+  var TIPS = ['Une roulade juste avant un coup déclenche une esquive parfaite.', 'Glisse depuis un bouton de sort pour viser à la main.',
+    'Les portails rouges verrouillent la sortie tant que le boss est debout.', 'Chaque rang débloque des portails plus dangereux… et plus généreux.',
+    'Le coffre piégé ne laisse que 3 essais : procède par dichotomie !', 'La forge améliore tes armes : chaque niveau débloque des bonus.',
+    'On raconte qu’un éveil sur dix mille révèle un Nécromancien…'];
+  var tip = document.getElementById('boot-tip'); if (tip) tip.textContent = 'Astuce : ' + TIPS[Math.floor(Math.random() * TIPS.length)];
+  var total = Math.max(1, document.querySelectorAll('script[src]').length), done = 0;
+  var fill = document.getElementById('boot-bar-fill'), pct = document.getElementById('boot-pct');
+  function prog(f) { var p = Math.round(Math.max(0, Math.min(1, f)) * 100); if (fill) fill.style.width = p + '%'; if (pct) pct.textContent = p + ' %'; }
+  window.__bootProgress = prog;
+  document.addEventListener('load', function (e) { if (e.target && e.target.tagName === 'SCRIPT') { done++; prog(done / total * .95); } }, true);
+  function fail(txt) {
+    if (!boot) return;
+    boot.classList.add('failed');
+    var t = document.getElementById('boot-err-txt'); if (t && txt) t.textContent = txt;
+  }
+  window.__bootFail = fail;
+  if (typeof THREE === 'undefined') { fail(); return; }
+  window.addEventListener('error', function (e) {
+    if (boot && boot.parentNode && !boot.classList.contains('done') && e && e.message && !(e.target && e.target !== window)) {
+      if (msg) msg.textContent = 'Un module a rencontré un problème : ' + String(e.message).slice(0, 120);
+    }
+  });
+  window.addEventListener('load', function () {
+    prog(1);
+    setTimeout(function () { if (boot && !boot.classList.contains('failed')) { boot.classList.add('done'); setTimeout(function () { if (boot.parentNode) boot.parentNode.removeChild(boot); }, 600); } }, 700);
+  });
+})();
+</script>
+<!-- Ordre de chargement : voir CONTRACT-V3.md §1 -->
+<script src="js/content.js" onerror="__bootFail&&__bootFail('Fichier js/content.js introuvable.')"></script>
+<script src="js/graphics.js" onerror="__bootFail&&__bootFail('Fichier js/graphics.js introuvable.')"></script>
+<script src="js/core.js" onerror="__bootFail&&__bootFail('Fichier js/core.js introuvable.')"></script>
+<!-- données -->
+<script src="js/data/classes.js"></script>
+<script src="js/data/skills.js"></script>
+<script src="js/data/talents.js"></script>
+<script src="js/data/ranks.js"></script>
+<script src="js/data/items.js"></script>
+<script src="js/data/monsters.js"></script>
+<script src="js/data/bosses.js"></script>
+<script src="js/data/dungeons.js"></script>
+<!-- effets visuels + modèles 3D -->
+<script src="js/fx/vfx.js"></script>
+<script src="js/gfx/class-models.js"></script>
+<script src="js/gfx/heroes/hero-tex.js"></script>
+<script src="js/gfx/heroes/hero-render.js"></script>
+<script src="js/gfx/heroes/hero-kit.js"></script>
+<script src="js/gfx/heroes/hero-defs.js"></script>
+<script src="js/gfx/heroes/hero-outfits.js"></script>
+<script src="js/gfx/heroes/hero-weapons.js"></script>
+<script src="js/gfx/heroes/hero-anim.js"></script>
+<script src="js/gfx/heroes/hero-vfx.js"></script>
+<script src="js/gfx/heroes/heroes.js"></script>
+<script src="js/gfx/monster-models.js"></script>
+<script src="js/gfx/boss-models.js"></script>
+<script src="js/gfx/dungeon-themes.js"></script>
+<!-- systèmes -->
+<script src="js/sys/progression.js"></script>
+<script src="js/sys/skills.js"></script>
+<script src="js/sys/talents.js"></script>
+<script src="js/sys/inventory.js"></script>
+<script src="js/sys/necro.js"></script>
+<script src="js/sys/ai.js"></script>
+<script src="js/sys/boss-attacks.js"></script>
+<script src="js/sys/procgen.js"></script>
+<script src="js/sys/events.js"></script>
+<script src="js/sys/portals.js"></script>
+<script src="js/sys/cosmetics.js"></script>
+<script src="js/sys/audio.js"></script>
+<script src="js/sys/horror.js"></script>
+<!-- interface + moteur -->
+<script src="js/ui/icons.js"></script>
+<script src="js/ui/ds.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/ui/class-select.js"></script>
+<script src="js/game.js" onerror="__bootFail&&__bootFail('Fichier js/game.js introuvable.')"></script>
+</body>
+</html>
