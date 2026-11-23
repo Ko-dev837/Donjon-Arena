@@ -1,7 +1,7 @@
 rules_version = '2';
 // =====================================================================
 //  Donjon Arena 3D — règles Firestore du mode en ligne
-//  Collections : users (+ requests, friends), codes, guilds (+ members, chat), guildCodes
+//  Collections : users (+ requests, friends), codes, guilds (+ members, chat, log), guildCodes
 //  Principes : chacun n'écrit que son profil ; les amitiés exigent une demande ;
 //  seuls les membres d'une guilde lisent la guilde, ses membres et son chat ;
 //  types et tailles validés ; tout le reste est refusé.
@@ -75,24 +75,45 @@ service cloud.firestore {
     }
 
     // ------------------------------------------------------------ guildes
-    function isMember(gid) { return signedIn() && exists(/databases/$(database)/documents/guilds/$(gid)/members/$(request.auth.uid)); }
-    function roleOf(gid) { return get(/databases/$(database)/documents/guilds/$(gid)/members/$(request.auth.uid)).data.role; }
+    //  Rôles : chef > officier > membre > recrue (rôle absent ou inconnu = membre côté client).
+    //  Champs facultatifs de guilds/{gid} (absents sur les anciennes guildes) :
+    //    motd (≤ 200), emblem { icon, color }, open (booléen, absent = ouvert).
+    function guildPath(gid) { return /databases/$(database)/documents/guilds/$(gid); }
+    function memberPath(gid, uid) { return /databases/$(database)/documents/guilds/$(gid)/members/$(uid); }
+    function isMember(gid) { return signedIn() && exists(memberPath(gid, request.auth.uid)); }
+    function roleOf(gid) { return get(memberPath(gid, request.auth.uid)).data.role; }
+    function validEmblem(e) {
+      return e is map && e.keys().hasOnly(['icon', 'color'])
+        && e.icon is string && e.icon.matches('^[a-z]{1,20}$')
+        && e.color is string && e.color.matches('^#[0-9a-fA-F]{6}$');
+    }
+    function validGuild(d) {
+      return d.keys().hasOnly(['name', 'tag', 'code', 'leader', 'created', 'motd', 'emblem', 'open'])
+        && (!('motd' in d) || str(d.motd, 0, 200))
+        && (!('emblem' in d) || validEmblem(d.emblem))
+        && (!('open' in d) || d.open is bool);
+    }
 
     match /guilds/{gid} {
       allow read: if isMember(gid);
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['name', 'tag', 'code', 'leader', 'created'])
+        && validGuild(request.resource.data)
         && request.resource.data.leader == me()
         && str(request.resource.data.name, 3, 24)
         && request.resource.data.tag is string && request.resource.data.tag.matches('^[A-Z0-9]{3,4}$')
         && code6(request.resource.data.code)
         && request.resource.data.created == request.time
-        && existsAfter(/databases/$(database)/documents/guilds/$(gid)/members/$(request.auth.uid))
+        && existsAfter(memberPath(gid, request.auth.uid))
         && getAfter(/databases/$(database)/documents/guildCodes/$(request.resource.data.code)).data.gid == gid;
-      // seul le chef modifie la guilde, et seulement pour transmettre la direction à un membre devenu chef
-      allow update: if signedIn() && resource.data.leader == me()
-        && changed().hasOnly(['leader'])
-        && getAfter(/databases/$(database)/documents/guilds/$(gid)/members/$(request.resource.data.leader)).data.role == 'chef';
+      allow update: if signedIn() && validGuild(request.resource.data) && (
+          // le chef transmet la direction à un membre devenu chef dans le même lot
+          (resource.data.leader == me() && changed().hasOnly(['leader'])
+            && getAfter(memberPath(gid, request.resource.data.leader)).data.role == 'chef')
+          // message du jour : chef ou officier
+          || (changed().hasOnly(['motd']) && roleOf(gid) in ['chef', 'officier'])
+          // réglages : recrutement et emblème, chef seulement
+          || (resource.data.leader == me() && changed().hasOnly(['open', 'emblem']))
+        );
       allow delete: if signedIn() && resource.data.leader == me();
 
       match /members/{uid} {
@@ -103,30 +124,43 @@ service cloud.firestore {
           && request.resource.data.joined == request.time && request.resource.data.lastMsg == request.time
           && (
             // fondateur : la guilde est créée dans le même lot, avec lui comme chef
-            (request.resource.data.role == 'chef' && !exists(/databases/$(database)/documents/guilds/$(gid))
-              && getAfter(/databases/$(database)/documents/guilds/$(gid)).data.leader == uid)
-            // nouveau membre : doit connaître le code de la guilde
-            || (request.resource.data.role == 'membre' && exists(/databases/$(database)/documents/guilds/$(gid))
-              && request.resource.data.code == get(/databases/$(database)/documents/guilds/$(gid)).data.code)
+            (request.resource.data.role == 'chef' && !exists(guildPath(gid))
+              && getAfter(guildPath(gid)).data.leader == uid)
+            // nouvel arrivant : recrue, connaît le code, et le recrutement n'est pas fermé
+            || (request.resource.data.role == 'recrue' && exists(guildPath(gid))
+              && request.resource.data.code == get(guildPath(gid)).data.code
+              && get(guildPath(gid)).data.get('open', true) != false)
           );
-        allow update: if signedIn() && (
+        allow update: if signedIn() && changed().size() > 0 && (
           // soi-même : pseudo et horodatage anti-spam uniquement
           (me() == uid && changed().hasOnly(['name', 'lastMsg']) && str(request.resource.data.name, 1, 20)
             && (!('lastMsg' in changed()) || request.resource.data.lastMsg == request.time))
-          // le chef promeut / rétrograde un autre membre
+          // l'ancien chef devient officier, dans le lot qui confie la direction à un autre membre devenu chef
+          || (me() == uid && resource.data.role == 'chef' && changed().hasOnly(['role'])
+            && request.resource.data.role == 'officier'
+            && getAfter(guildPath(gid)).data.leader != uid
+            && getAfter(memberPath(gid, getAfter(guildPath(gid)).data.leader)).data.role == 'chef')
+          // le chef change le rôle d'un autre membre (jamais d'un chef) : officier, membre ou recrue
           || (me() != uid && roleOf(gid) == 'chef' && changed().hasOnly(['role'])
-            && request.resource.data.role in ['officier', 'membre'])
+            && resource.data.role != 'chef'
+            && request.resource.data.role in ['officier', 'membre', 'recrue'])
+          // un officier promeut une recrue en membre, et rien d'autre
+          || (me() != uid && roleOf(gid) == 'officier' && changed().hasOnly(['role'])
+            && resource.data.role == 'recrue' && request.resource.data.role == 'membre')
           // le chef transmet la guilde (même lot que la mise à jour de guilds/{gid}.leader)
-          || (me() != uid && roleOf(gid) == 'chef' && changed().hasOnly(['role']) && request.resource.data.role == 'chef'
-            && getAfter(/databases/$(database)/documents/guilds/$(gid)).data.leader == uid)
+          || (me() != uid && roleOf(gid) == 'chef' && changed().hasOnly(['role'])
+            && request.resource.data.role == 'chef'
+            && getAfter(guildPath(gid)).data.leader == uid)
         );
         allow delete: if signedIn() && (
           // quitter (le chef doit d'abord transmettre la guilde, sauf s'il la dissout)
           (me() == uid && (resource.data.role != 'chef'
-            || !existsAfter(/databases/$(database)/documents/guilds/$(gid))
-            || getAfter(/databases/$(database)/documents/guilds/$(gid)).data.leader != uid))
-          // exclusion par le chef
+            || !existsAfter(guildPath(gid))
+            || getAfter(guildPath(gid)).data.leader != uid))
+          // exclusion par le chef (tout membre sauf un chef)
           || (me() != uid && roleOf(gid) == 'chef' && resource.data.role != 'chef')
+          // exclusion par un officier : membres et recrues seulement
+          || (me() != uid && roleOf(gid) == 'officier' && resource.data.role in ['membre', 'recrue'])
         );
       }
 
@@ -139,10 +173,26 @@ service cloud.firestore {
           && str(request.resource.data.name, 1, 20)
           && str(request.resource.data.text, 1, 200)
           && request.resource.data.at == request.time
-          && getAfter(/databases/$(database)/documents/guilds/$(gid)/members/$(request.auth.uid)).data.lastMsg == request.time
-          && request.time > get(/databases/$(database)/documents/guilds/$(gid)/members/$(request.auth.uid)).data.lastMsg + duration.value(2, 's');
+          && getAfter(memberPath(gid, request.auth.uid)).data.lastMsg == request.time
+          && request.time > get(memberPath(gid, request.auth.uid)).data.lastMsg + duration.value(2, 's');
         // modération : l'auteur, le chef ou un officier peuvent supprimer
         allow delete: if isMember(gid) && (resource.data.uid == me() || roleOf(gid) in ['chef', 'officier']);
+        allow update: if false;
+      }
+
+      // journal : écrit par l'auteur de l'action, membre avant ou après le lot (départ, arrivée, création)
+      match /log/{lid} {
+        allow read: if isMember(gid);
+        allow create: if signedIn()
+          && (exists(memberPath(gid, request.auth.uid)) || existsAfter(memberPath(gid, request.auth.uid)))
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'type', 'text', 'at'])
+          && request.resource.data.uid == me()
+          && str(request.resource.data.name, 1, 20)
+          && request.resource.data.type in ['creation', 'arrivee', 'depart', 'promotion', 'retrogradation', 'exclusion', 'transfert', 'motd']
+          && str(request.resource.data.text, 1, 120)
+          && request.resource.data.at == request.time;
+        // effacé seulement par le chef (dissolution)
+        allow delete: if isMember(gid) && roleOf(gid) == 'chef';
         allow update: if false;
       }
     }
@@ -153,10 +203,16 @@ service cloud.firestore {
       allow list: if false;
       allow create: if signedIn() && code6(code)
         && request.resource.data.keys().hasOnly(['gid']) && request.resource.data.gid is string
-        && getAfter(/databases/$(database)/documents/guilds/$(request.resource.data.gid)).data.code == code
-        && getAfter(/databases/$(database)/documents/guilds/$(request.resource.data.gid)).data.leader == me();
-      allow delete: if signedIn() && get(/databases/$(database)/documents/guilds/$(resource.data.gid)).data.leader == me();
-      allow update: if false;
+        && getAfter(guildPath(request.resource.data.gid)).data.code == code
+        && getAfter(guildPath(request.resource.data.gid)).data.leader == me();
+      // le chef recopie l'état du recrutement (open) pour que les non-membres sachent si le code fonctionne
+      allow update: if signedIn()
+        && request.resource.data.keys().hasOnly(['gid', 'open'])
+        && changed().hasOnly(['open'])
+        && request.resource.data.open is bool
+        && get(guildPath(resource.data.gid)).data.leader == me()
+        && getAfter(guildPath(resource.data.gid)).data.open == request.resource.data.open;
+      allow delete: if signedIn() && get(guildPath(resource.data.gid)).data.leader == me();
     }
   }
 }

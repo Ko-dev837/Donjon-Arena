@@ -98,6 +98,8 @@
           "rs": { ".validate": "newData.isString() && newData.val().length <= 16" },
           "t": { ".validate": "newData.isNumber()" },
           "en": { ".validate": true },
+          "ch": { ".validate": "newData.hasChildren(['0', '1', '2'])" },
+          "op": { ".validate": true },
           "$other": { ".validate": false }
         },
 
@@ -118,6 +120,7 @@
             "v": { ".validate": "newData.isNumber()" },
             "why": { ".validate": "newData.isString() && newData.val().length <= 16" },
             "rd": { ".validate": "newData.isString() && newData.val().length <= 60000" },
+            "key": { ".validate": "newData.isString() && newData.val().length <= 24" },
             "$other": { ".validate": false }
           }
         },

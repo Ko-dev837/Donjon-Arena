@@ -14,6 +14,19 @@ window.G = window.G || {};
   const P = () => G.Procgen;
   const U = () => G.Procgen.util;
   const rnd = (a, b) => a + G.rng.float() * (b - a);
+  // --- coop (voir G.game.net) : objets partagés ouverts par l'hôte, butin propre à chaque joueur ---
+  const NET = () => (G.game && G.game.net) || null;
+  const isGuest = () => { const n = NET(); return !!(n && n.role === 'guest'); };
+  function netReg(key, def) { const n = NET(); if (n && n.role && n.objRegister) n.objRegister(key, def); }
+  /** true = ouvrir ici (solo / hôte) ; false = invité : la demande part chez l'hôte */
+  function netUse(key, S, o) {
+    const n = NET(); if (!n || !n.objUse || n.objUse(key)) return true;
+    if (S && o) after(S, 1.5, () => { o.armed = true; });      // invité : la demande est renvoyée tant que l'hôte n'a pas ouvert
+    return false;
+  }
+  function netDone(key, info) { const n = NET(); if (n && n.objDone) n.objDone(key, info); }
+  /** Petit générateur déterministe (positions identiques chez tous les joueurs) */
+  function srng(seed) { let s2 = (Math.floor(Number(seed) || 1) >>> 0) || 1; return () => { s2 = (Math.imul(s2, 1664525) + 1013904223) >>> 0; return s2 / 4294967296; }; }
   const rint = (a, b) => G.rng.int(a, b);
   const safe = (fn, fb) => { try { return fn(); } catch (e) { console.error('[events]', e); return fb; } };
   const rankIdx = (run) => { const r = run && run.dungeon && run.dungeon.rank; return Math.max(0, ['E', 'D', 'C', 'B', 'A', 'S', 'SS'].indexOf(r)); };
@@ -478,7 +491,7 @@ window.G = window.G || {};
             U().sfx('arrow');
             const dir = pos3(-tr.side, 0, 0);
             if (api && api.projectile && hasTHREE()) {
-              safe(() => api.projectile({ pos: pos3(tr.x - tr.side * 0.8, 1.0, tr.z), dir, speed: 17, damage: tr.dmg, element: 'physique', radius: 0.45, life: 2.4, pierce: 0, owner: 'enemy', model: 'arrow' }));
+              safe(() => api.projectile({ pos: pos3(tr.x - tr.side * 0.8, 1.0, tr.z), dir, speed: 17, damage: tr.dmg, element: 'physique', radius: 0.45, life: 2.4, pierce: 0, owner: 'enemy', model: 'arrow', netLocal: true }));
             } else if (p && Math.abs(p.pos.z - tr.z) < 0.7) U().damagePlayer(tr.dmg, { element: 'physique', source: 'fleche' });
           }
         }
@@ -506,6 +519,22 @@ window.G = window.G || {};
     if (t === 'trap' || t === 'event' || t === 'treasure') return cur ? cur.done || cur.t > 6 : true;
     return true;
   }
+  /** Passage secret partagé : l'hôte l'ouvre, l'invité l'applique (même salle insérée chez tous) */
+  function netRegSecret(rm) {
+    const n = NET(); if (!n || !n.role || rm._netSecret) return;
+    rm._netSecret = true;
+    netReg('secret', {
+      hostUse: () => { const run = U().run(); if (run && P().revealSecret(run, rm)) { netDone('secret'); U().banner('<b>' + bi('key', '🗝️') + ' Un passage secret s\'ouvre…</b>', 2.2); U().sfx('door'); if (sw && sw.room === rm) { sw.f.clear(); sw = null; } } },
+      apply: () => {
+        const run = U().run(); if (!run) return;
+        P().revealSecret(run, rm);
+        if (sw && sw.room === rm) { sw.f.clear(); sw = null; }
+        if (rev && rev.room === rm && !rev.done) { rev.done = true; rev.f.clear(); }
+        U().banner('<b>' + bi('key', '🗝️') + ' Un passage secret s\'ouvre…</b><br><small>La porte du nord mène à une salle cachée</small>', 2.4);
+        U().sfx('door');
+      },
+    });
+  }
   function updateSwitch(dt, run) {
     const rm = U().roomRef();
     if (swRoom !== rm) {
@@ -513,13 +542,15 @@ window.G = window.G || {};
       sw = null; swRoom = rm;
       if (rm && rm.data && rm.data.secret && !rm.data.secret._revealed && !(rm.data.secret.data && rm.data.secret.data.reveal) && hasTHREE()) {
         const f = P().newField(rm);
-        const side = G.rng.chance(0.5) ? -1 : 1, x = side * (HALF - 1.4), z = rnd(-6, 4);
+        const sr = srng((rm.seed || 7) * 31 + 11);      // même position chez tous les joueurs (coop)
+        const side = sr() < 0.5 ? -1 : 1, x = side * (HALF - 1.4), z = -6 + sr() * 10;
         const g = new THREE.Group(); g.position.set(x, 0, z);
         const rune = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.95, 24), basicM(0x66ddff, 0.35)); rune.rotation.x = -Math.PI / 2; rune.position.y = 0.06; g.add(rune);
         const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0), basicM(0x66ddff, 0.5)); gem.position.set(side > 0 ? 0.6 : -0.6, 1.1, 0); g.add(gem);
         const prog = new THREE.Mesh(new THREE.CircleGeometry(0.7, 20), basicM(0xffffff, 0.5)); prog.rotation.x = -Math.PI / 2; prog.position.y = 0.07; prog.scale.setScalar(0.001); g.add(prog);
         f.add(g);
         sw = { f, x, z, g, rune, gem, prog, hold: 0, t: 0, hinted: false, room: rm };
+        netRegSecret(rm);
       }
     }
     if (!sw || !run) return;
@@ -536,7 +567,9 @@ window.G = window.G || {};
     sw.hold = near ? sw.hold + dt : Math.max(0, sw.hold - dt * 2);
     sw.prog.scale.setScalar(Math.max(0.001, Math.min(1, sw.hold / 1.5)));
     if (sw.hold >= 1.5) {
+      if (!netUse('secret')) { sw.hold = -2; U().toast('🔎 Mécanisme activé…'); return; }      // invité : l'hôte ouvre le passage pour tous
       const ok = P().revealSecret(run, sw.room);
+      if (ok) netDone('secret');
       sw.f.clear(); sw = null;
       if (ok) {
         U().banner('<b>' + bi('key', '🗝️') + ' Un passage secret s\'ouvre…</b><br><small>La porte du nord mène à une salle cachée</small>', 2.4);
@@ -604,7 +637,9 @@ window.G = window.G || {};
         const mimic = G.rng.chance(typeof d.mimicChance === 'number' ? d.mimicChance : 0.1);   // 0 explicite = aucune mimique
         const ch = { x, z, mesh: c, opened: false, mimic, i };
         S.chests.push(ch);
-        addUsable(S, { x, z, r: 1.9, onUse: () => openTreasure(S, ch) });
+        const key = 'tr' + i;
+        addUsable(S, { x, z, r: 1.9, onUse: (S2, o) => { if (!ch.opened && netUse(key, S, o)) openTreasure(S, ch); } });
+        netReg(key, { hostUse: () => openTreasure(S, ch), apply: (info) => openTreasure(S, ch, info) });
       }
       S.mimicPending = false;
       U().banner('<b>Salle au trésor</b><br><small>Ouvrez les coffres… si vous l\'osez</small>', 2.2);
@@ -623,12 +658,21 @@ window.G = window.G || {};
     isCleared() { return !!(cur && cur.done); },
     end() { endCurrent(); },
   });
-  function openTreasure(S, ch) {
+  /** remote : invité, l'hôte a ouvert ce coffre (info 'm' = mimique) → visuel + butin propre au joueur */
+  function openTreasure(S, ch, remote) {
     if (ch.opened) return;
     ch.opened = true;
+    if (remote !== undefined) ch.mimic = remote === 'm';
+    else netDone('tr' + ch.i, ch.mimic ? 'm' : 1);
     if (ch.mesh) openChestVisual(ch.mesh);
     const p3 = pos3(ch.x, 1, ch.z), r = rankIdx(S.run), rich = S.data.rich;
     if (ch.mimic) {
+      if (remote !== undefined) {      // la mimique est simulée par l'hôte (marionnette ici)
+        U().banner('<b>C\'était une mimique !</b>', 1.5); U().sfx('chestBad');
+        if (ch.mesh) ch.mesh.userData.chomp = 0.8;
+        reward(S, { gold: 30 + 20 * r }, p3);
+        return;
+      }
       U().banner('<b>C\'était une mimique !</b>', 1.5);
       U().sfx('chestBad');
       if (G.core && G.core.shake) G.core.shake(0.4);
@@ -714,6 +758,7 @@ window.G = window.G || {};
     end() { endCurrent(); },
   });
   function pick(S, d) {
+    if (isGuest()) { setObj(S, 'Le chef du groupe choisit le chemin'); return; }      // coop : l'hôte choisit, la salle suivante arrive par le réseau
     const opts = d.options || [];
     if (!opts.length) { S.done = true; return; }
     const uiOpts = opts.map((o, i) => ({ label: o.label, desc: o.desc, value: i, icon: o.icon }));
@@ -745,7 +790,8 @@ window.G = window.G || {};
         spawnMobs(S, [monsterIds(S, true)[0]], { elite: true });
         U().banner('<b>' + bi('key', '🗝️') + ' Salle secrète</b><br><small>Un gardien veille sur le reliquaire !</small>', 2.4);
       } else U().banner('<b>' + bi('key', '🗝️') + ' Salle secrète</b><br><small>Un reliquaire vous attend</small>', 2.4);
-      addUsable(S, { x, z, r: 2.0, onUse: () => { if (S.locked) { U().toast('Le reliquaire est scellé tant que le gardien vit'); return; } openSecret(S); } });
+      addUsable(S, { x, z, r: 2.0, onUse: (S2, o) => { if (S.locked && !isGuest()) { U().toast('Le reliquaire est scellé tant que le gardien vit'); return; } if (!S.opened && netUse('sec', S, o)) openSecret(S); } });
+      netReg('sec', { hostUse: () => { if (S.locked) return; openSecret(S); }, apply: () => openSecret(S, true) });
       // v5 : la créature secrète du donjon n'apparaît qu'ici (comportement propre : disparaît ou offre un présent)
       if (d.creature && G.SkillAPI && G.SkillAPI.spawnEnemy && hasTHREE() && (G.MONSTERS && G.MONSTERS[d.creature])) {
         after(S, 1.6, () => {
@@ -764,9 +810,10 @@ window.G = window.G || {};
     isCleared() { return !!(cur && cur.done); },
     end() { endCurrent(); },
   });
-  function openSecret(S) {
+  function openSecret(S, remote) {
     if (S.opened) return;
     S.opened = true;
+    if (!remote) netDone('sec');
     if (S.chest) openChestVisual(S.chest);
     const r = rankIdx(S.run), p3 = pos3(S.cx, 1, S.cz), tier = S.data.tier || 'rare';
     U().sfx('chestOk');
@@ -1663,12 +1710,14 @@ window.G = window.G || {};
       const b = run.room, f = P().newField(rm);
       const arch = (run.dungeon && run.dungeon.archi) || '';
       const col = /chateau|cathedrale/.test(arch) ? 0x8a7a6a : /mine|foire|biblio/.test(arch) ? 0x6a4a2a : /jardin/.test(arch) ? 0x8a3a44 : /necropole|glace/.test(arch) ? 0xa8d8f0 : 0x6a5a4a;
-      const [x, z] = randFree(b, 0.9, -HALF + 4, HALF - 4);
+      const orf = G.rng.float; if (NET() && NET().role) G.rng.float = srng((rm.seed || 3) * 17 + 5);     // coop : même cachette chez tous
+      let x, z; try { [x, z] = randFree(b, 0.9, -HALF + 4, HALF - 4); } finally { G.rng.float = orf; }
       const g = new THREE.Group(); g.position.set(x, 0, z);
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.9, 8), toonM(col)); body.position.y = 0.45; body.userData.own = true; g.add(body);
       const crack = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.02), basicM(0xffd23f, 0.7)); crack.position.set(0.1, 0.5, 0.44); crack.rotation.z = 0.4; crack.userData.own = true; g.add(crack);
       f.add(g);
       cache = { room: rm, f, x, z, g, crack, hits: 0, hold: 0, t: 0 };
+      netReg('cache', { hostUse: () => takeCache(rm, U().run()), apply: () => takeCache(rm, U().run(), true) });
     }
     if (!cache) return;
     cache.t += dt;
@@ -1677,15 +1726,22 @@ window.G = window.G || {};
     const d = Math.hypot(p.pos.x - cache.x, p.pos.z - cache.z);
     cache.hold = d < 1.6 ? cache.hold + dt : 0;
     if (cache.hold > 1.2 || cache.hits >= 1) {
-      rm.data.cache.taken = true;
-      snd('mur_fissure', cache.x, cache.z);
-      const r = rankIdx(run), rich = rm.data.cache.rich;
-      U().giveGold(Math.round((20 + 18 * r) * (rich ? 2.2 : 1)), pos3(cache.x, 1, cache.z));
-      if (rich && G.rng.chance(0.35)) U().giveItem('rare');
-      fxBurst(pos3(cache.x, 0.8, cache.z), 0xffd23f, 18);
-      U().toast(rich ? '🏺 Une cache bien garnie !' : '🏺 Une cache oubliée');
-      cache.f.clear(); cache = null;
+      if (!netUse('cache')) { cache.hold = -2; cache.hits = 0; return; }     // invité : l'hôte casse la cache pour tous
+      takeCache(rm, run);
     }
+  }
+  /** Cache cassée : butin propre au joueur ; remote = l'hôte l'a cassée (invité) */
+  function takeCache(rm, run, remote) {
+    if (!cache || cache.room !== rm || rm.data.cache.taken) return;
+    rm.data.cache.taken = true;
+    if (!remote) netDone('cache');
+    snd('mur_fissure', cache.x, cache.z);
+    const r = rankIdx(run), rich = rm.data.cache.rich;
+    U().giveGold(Math.round((20 + 18 * r) * (rich ? 2.2 : 1)), pos3(cache.x, 1, cache.z));
+    if (rich && G.rng.chance(0.35)) U().giveItem('rare');
+    fxBurst(pos3(cache.x, 0.8, cache.z), 0xffd23f, 18);
+    U().toast(rich ? '🏺 Une cache bien garnie !' : '🏺 Une cache oubliée');
+    cache.f.clear(); cache = null;
   }
   G.bus.on('skillCast', () => { if (cache) { const p = pl(); if (p && Math.hypot(p.pos.x - cache.x, p.pos.z - cache.z) < 2.6) cache.hits++; } });
 
@@ -1738,6 +1794,7 @@ window.G = window.G || {};
     if (o.done) return;
     o.done = true;
     const ok = P().revealSecret(run, o.room);
+    if (ok) netDone('secret');
     o.f.clear();
     if (ok) {
       const sec = o.room.data.secret, hb = sec && sec.data && sec.data.hiddenBoss;
@@ -1751,6 +1808,8 @@ window.G = window.G || {};
     const rm = U().roomRef();
     if (rev && rev.room !== rm) { if (!rev.done) rev.f.clear(); rev = null; }
     if (!rev && rm && rm.data && rm.data.secret && !rm.data.secret._revealed && rm.data.secret.data && rm.data.secret.data.reveal) {
+      netRegSecret(rm);
+      if (isGuest()) return;      // énigme résolue par l'hôte ; le passage s'ouvre ensuite chez tous
       if (!swReady2(run, rm)) return;
       rev = buildReveal(rm, run);
     }

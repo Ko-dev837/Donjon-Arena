@@ -47,6 +47,7 @@ window.G = window.G || {};
     guild: null,            // { id, name, tag, code, leader }
     guildMembers: [],       // [{ uid, name, role, online }]
     chat: [],               // [{ id, uid, name, text, at }]
+    guildLog: [],           // [{ id, uid, name, type, text, at }] — 30 derniers événements
     lobby: null,            // { id, leader, state, members:{}, portal, launch }
     session: null,          // partie coop en cours
     db: null,               // transport temps réel (G.NetTransport)
@@ -182,7 +183,7 @@ window.G = window.G || {};
   function stopSocial() { socialOff.forEach(f => { try { f(); } catch (_) { /* rien */ } }); socialOff = []; }
   async function onAuth(u) {
     stopSocial();
-    if (!u) { O.user = null; O.me = null; O.friends = []; O.requests = []; O.invites = []; O.guild = null; O.guildMembers = []; O.chat = []; changed('auth'); return; }
+    if (!u) { O.user = null; O.me = null; O.friends = []; O.requests = []; O.invites = []; O.guild = null; O.guildMembers = []; O.chat = []; O.guildLog = []; watchGuild(null); changed('auth'); return; }
     O.user = { uid: u.uid, name: cleanName(u.displayName || 'Joueur'), photo: u.photoURL || null };
     O.error = null; O.profileError = null;
     try { await ensureUserDoc(); }
@@ -386,41 +387,118 @@ window.G = window.G || {};
   };
 
   // ------------------------------------------------------------------
-  // GUILDES : guilds/{gid}, guilds/{gid}/members/{uid}, guilds/{gid}/chat, guildCodes/{code}
+  // GUILDES : guilds/{gid} (+ members, chat, log), guildCodes/{code}
+  //   guilds/{gid}       { name, tag, code, leader, created, motd?, emblem?{icon,color}, open? }
+  //   guildCodes/{code}  { gid, open? }   (open recopié pour que les non-membres sachent si le code marche)
+  //   Champs absents (guildes créées avant cette version) : motd '', emblème par défaut, recrutement ouvert.
   // ------------------------------------------------------------------
   let guildOff = [], guildId = null;
-  const ROLES = ['chef', 'officier', 'membre'];
+  const ROLES = ['chef', 'officier', 'membre', 'recrue'];
+  const LOG_TYPES = ['creation', 'arrivee', 'depart', 'promotion', 'retrogradation', 'exclusion', 'transfert', 'motd'];
+  const EMBLEM_ICONS = ['shield', 'crown', 'swords', 'skull', 'flame', 'lightning', 'ice', 'holy', 'rune', 'gem', 'ghost', 'trophy'];   // noms d'icônes G.Icons
+  const EMBLEM_COLORS = ['#46d4ff', '#8b6bff', '#ffcf4a', '#ff5a74', '#4fd17a', '#ff8a3d', '#e6ecff', '#ff6bd6'];
+  const DEFAULT_EMBLEM = { icon: 'shield', color: '#46d4ff' };
+  const cleanText = (s, max) => String(s == null ? '' : s).replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+  function normEmblem(e) {
+    const icon = e && EMBLEM_ICONS.indexOf(e.icon) >= 0 ? e.icon : DEFAULT_EMBLEM.icon;
+    const color = e && /^#[0-9a-fA-F]{6}$/.test(String(e.color || '')) ? String(e.color).toLowerCase() : DEFAULT_EMBLEM.color;
+    return { icon, color };
+  }
+  function normGuild(id, d) {
+    return Object.assign({}, d, { id, motd: typeof d.motd === 'string' ? d.motd.slice(0, 200) : '', emblem: normEmblem(d.emblem), open: d.open !== false });
+  }
+  const tsMs = v => (v && typeof v.toMillis === 'function' ? v.toMillis() : (typeof v === 'number' ? v : 0));
+  function clearMyGuildId() { if (O.user && fb) fb.fs.collection('users').doc(O.user.uid).set({ guildId: null }, { merge: true }).catch(() => {}); }
+
   function watchGuild(gid) {
     if (gid === guildId) return;
-    guildOff.forEach(f => f()); guildOff = []; guildId = gid || null;
-    O.guild = null; O.guildMembers = []; O.chat = [];
+    guildOff.forEach(f => { try { f(); } catch (_) { /* rien */ } }); guildOff = []; guildId = gid || null;
+    O.guild = null; O.guildMembers = []; O.chat = []; O.guildLog = [];
     if (!gid) { changed('guild'); return; }
     const g = fb.fs.collection('guilds').doc(gid);
-    guildOff.push(g.onSnapshot(s => { O.guild = s.exists ? Object.assign({ id: gid }, s.data()) : null; changed('guild'); },
-      () => { O.guild = null; changed('guild'); }));
-    const presence = {};
+    // guilde dissoute ou accès retiré (exclusion) : on libère le profil pour pouvoir en rejoindre une autre
+    const lost = e => { O.guild = null; O.guildMembers = []; changed('guild'); if (!e || /permission/i.test(String(e.code || e.message || ''))) clearMyGuildId(); };
+    guildOff.push(g.onSnapshot(s => { if (!s.exists) return lost(); O.guild = normGuild(gid, s.data()); changed('guild'); }, lost));
+    const presence = {}, info = {}, watched = {};
+    const apply = m => {
+      const p = presence[m.uid] || {}, u = info[m.uid] || {};
+      m.online = m.uid === (O.user && O.user.uid) ? true : !!p.online;
+      m.inGame = m.uid === (O.user && O.user.uid) ? !!inGameFlag : !!p.inGame;
+      if (u.classe) m.classe = u.classe;
+      if (u.rank) m.rank = u.rank;
+      if (u.niveau != null) m.niveau = u.niveau;
+      return m;
+    };
+    const touch = uid => { const m = O.guildMembers.find(x => x.uid === uid); if (m) { apply(m); sortMembers(); changed('guild'); } };
     guildOff.push(g.collection('members').onSnapshot(s => {
-      if (!s.docs.some(d => d.id === O.user.uid)) {     // exclu (ou guilde dissoute) : on nettoie le profil
-        fb.fs.collection('users').doc(O.user.uid).set({ guildId: null }, { merge: true }).catch(() => {});
-        return;
-      }
-      O.guildMembers = s.docs.map(d => { const x = d.data(); return { uid: d.id, name: cleanName(x.name), role: ROLES.indexOf(x.role) >= 0 ? x.role : 'membre', online: presence[d.id] || false }; })
-        .sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role) || a.name.localeCompare(b.name));
+      if (!s.docs.some(d => d.id === O.user.uid)) return lost();      // exclu (ou guilde dissoute)
+      O.guildMembers = s.docs.map(d => {
+        const x = d.data();
+        return apply({ uid: d.id, name: cleanName(x.name), role: ROLES.indexOf(x.role) >= 0 ? x.role : 'membre', joined: tsMs(x.joined), online: false, inGame: false, classe: null, rank: null, niveau: null });
+      });
+      sortMembers();
+      const ids = new Set(O.guildMembers.map(m => m.uid));
+      Object.keys(watched).forEach(uid => { if (!ids.has(uid)) { watched[uid](); delete watched[uid]; } });
       O.guildMembers.forEach(m => {
-        if (presence[m.uid] !== undefined || m.uid === O.user.uid) return;
-        presence[m.uid] = false;
-        guildOff.push(O.db.watch('status/' + m.uid, st => { presence[m.uid] = !!(st && st.state === 'online'); const mm = O.guildMembers.find(x => x.uid === m.uid); if (mm) { mm.online = presence[m.uid]; changed('guild'); } }));
+        if (watched[m.uid]) return;
+        const offs = [];
+        offs.push(fb.fs.collection('users').doc(m.uid).onSnapshot(us => { if (us.exists) { const d = us.data(); info[m.uid] = { classe: d.classe, rank: d.rank, niveau: d.niveau }; touch(m.uid); } }, () => {}));
+        if (m.uid !== O.user.uid) offs.push(O.db.watch('status/' + m.uid, st => { presence[m.uid] = { online: !!(st && st.state === 'online'), inGame: !!(st && st.state === 'online' && st.inGame) }; touch(m.uid); }));
+        watched[m.uid] = () => offs.forEach(f => { try { f(); } catch (_) { /* rien */ } });
       });
       changed('guild');
-    }, () => {}));
+    }, lost));
+    guildOff.push(() => Object.keys(watched).forEach(uid => { watched[uid](); delete watched[uid]; }));
     guildOff.push(g.collection('chat').orderBy('at', 'desc').limit(50).onSnapshot(s => {
-      O.chat = s.docs.map(d => { const x = d.data(); return { id: d.id, uid: x.uid, name: cleanName(x.name), text: String(x.text || '').slice(0, 200), at: x.at && x.at.toMillis ? x.at.toMillis() : Date.now() }; }).reverse();
+      O.chat = s.docs.map(d => { const x = d.data(); return { id: d.id, uid: x.uid, name: cleanName(x.name), text: String(x.text || '').slice(0, 200), at: tsMs(x.at) || Date.now() }; }).reverse();
       changed('chat');
     }, () => {}));
+    guildOff.push(g.collection('log').orderBy('at', 'desc').limit(30).onSnapshot(s => {
+      O.guildLog = s.docs.map(d => { const x = d.data(); return { id: d.id, uid: x.uid, name: cleanName(x.name), type: LOG_TYPES.indexOf(x.type) >= 0 ? x.type : 'motd', text: String(x.text || '').slice(0, 120), at: tsMs(x.at) || Date.now() }; });
+      changed('guildlog');
+    }, () => {}));
+  }
+  /** Tri : rôle (chef → recrue), puis en ligne d'abord, puis pseudo */
+  function sortMembers() {
+    O.guildMembers.sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role) || (b.online - a.online) || a.name.localeCompare(b.name));
   }
   function myRole() { const m = O.guildMembers.find(x => O.user && x.uid === O.user.uid); return m ? m.role : null; }
   O.myGuildRole = myRole;
-  O.createGuild = async function (name, tag) {
+  const memberOf = uid => O.guildMembers.find(m => m.uid === uid) || null;
+  const rank = r => { const i = ROLES.indexOf(r); return i < 0 ? 2 : i; };     // 0 = chef … 3 = recrue
+
+  /**
+   * Permissions (miroir exact de firestore.rules) :
+   *   chef     : tout (promouvoir/rétrograder/exclure tout non-chef, transférer, message du jour, réglages, dissoudre)
+   *   officier : recrue → membre, exclure membres et recrues, message du jour, supprimer des messages du chat
+   *   membre / recrue : discuter, quitter
+   * action : 'promote' | 'demote' | 'kick' | 'transfer' | 'motd' | 'settings' | 'dissolve' | 'moderate'
+   */
+  O.guildCan = function (action, targetUid) {
+    const me = myRole(); if (!me || !O.guild) return false;
+    if (action === 'motd' || action === 'moderate') return me === 'chef' || me === 'officier';
+    if (action === 'settings' || action === 'dissolve') return me === 'chef';
+    const t = memberOf(targetUid);
+    if (!t || !O.user || t.uid === O.user.uid || t.role === 'chef') return false;
+    switch (action) {
+      case 'promote': return me === 'chef' ? t.role !== 'officier' : me === 'officier' && t.role === 'recrue';
+      case 'demote': return me === 'chef' && t.role !== 'recrue';
+      case 'kick': return me === 'chef' || (me === 'officier' && (t.role === 'membre' || t.role === 'recrue'));
+      case 'transfer': return me === 'chef';
+      default: return false;
+    }
+  };
+  const nextUp = r => (r === 'recrue' ? 'membre' : r === 'membre' ? 'officier' : null);
+  const nextDown = r => (r === 'officier' ? 'membre' : r === 'membre' ? 'recrue' : null);
+  O.guildNextRole = (uid, dir) => { const t = memberOf(uid); return t ? (dir > 0 ? nextUp(t.role) : nextDown(t.role)) : null; };
+
+  /** Ajoute une entrée de journal au lot (écrite par l'auteur de l'action) */
+  function logTo(b, gid, type, text) {
+    b.set(fb.fs.collection('guilds').doc(gid).collection('log').doc(), { uid: O.user.uid, name: pseudo(), type, text: cleanText(text, 120) || type, at: FV().serverTimestamp() });
+  }
+  const needGuild = () => { if (O.mode !== 'firebase' || !O.user || !O.guild) { toast('Tu n’es dans aucune guilde.'); return false; } return true; };
+
+  O.createGuild = async function (name, tag, emblem) {
     if (O.mode !== 'firebase' || !O.user) { toast('Connecte-toi pour créer une guilde.'); return false; }
     name = String(name || '').replace(/[\u0000-\u001f<>]/g, '').trim();
     tag = String(tag || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -430,10 +508,11 @@ window.G = window.G || {};
     const g = fb.fs.collection('guilds').doc();
     const code = rid(6);
     const b = fb.fs.batch(), ts = FV().serverTimestamp();
-    b.set(g, { name, tag, code, leader: O.user.uid, created: ts });
+    b.set(g, { name, tag, code, leader: O.user.uid, created: ts, motd: '', emblem: normEmblem(emblem), open: true });
     b.set(g.collection('members').doc(O.user.uid), { name: pseudo(), role: 'chef', code, joined: ts, lastMsg: ts });
     b.set(fb.fs.collection('guildCodes').doc(code), { gid: g.id });
     b.set(fb.fs.collection('users').doc(O.user.uid), { guildId: g.id }, { merge: true });
+    logTo(b, g.id, 'creation', pseudo() + ' a fondé la guilde [' + tag + '] ' + name + '.');
     await b.commit();
     toast('Guilde [' + tag + '] créée !');
     return true;
@@ -441,31 +520,30 @@ window.G = window.G || {};
   O.joinGuild = async function (code) {
     if (O.mode !== 'firebase' || !O.user) { toast('Connecte-toi pour rejoindre une guilde.'); return false; }
     code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 6) { toast('Un code de guilde fait 6 caractères.'); return false; }
     if (O.me && O.me.guildId) { toast('Quitte d’abord ta guilde actuelle.'); return false; }
     const c = await fb.fs.collection('guildCodes').doc(code).get();
     if (!c.exists) { toast('Code de guilde introuvable.'); return false; }
+    if (c.data().open === false) { toast('Le recrutement de cette guilde est fermé.'); return false; }
     const gid = c.data().gid, ts = FV().serverTimestamp();
     const b = fb.fs.batch();
-    b.set(fb.fs.collection('guilds').doc(gid).collection('members').doc(O.user.uid), { name: pseudo(), role: 'membre', code, joined: ts, lastMsg: ts });
+    b.set(fb.fs.collection('guilds').doc(gid).collection('members').doc(O.user.uid), { name: pseudo(), role: 'recrue', code, joined: ts, lastMsg: ts });
     b.set(fb.fs.collection('users').doc(O.user.uid), { guildId: gid }, { merge: true });
-    await b.commit();
+    logTo(b, gid, 'arrivee', pseudo() + ' a rejoint la guilde.');
+    try { await b.commit(); }
+    catch (e) { if (/permission/i.test(String(e && (e.code || e.message)))) { toast('Impossible de rejoindre : recrutement fermé ou code périmé.'); return false; } throw e; }
     toast('Bienvenue dans la guilde !');
     return true;
   };
   O.leaveGuild = async function () {
-    if (!O.user || !O.guild) return false;
-    const g = fb.fs.collection('guilds').doc(O.guild.id), b = fb.fs.batch();
+    if (!needGuild()) return false;
     const others = O.guildMembers.filter(m => m.uid !== O.user.uid);
     if (myRole() === 'chef') {
-      if (others.length) {        // le chef transmet la guilde avant de partir (officier d'abord, sinon le plus ancien listé)
-        const heir = others.find(m => m.role === 'officier') || others[0];
-        b.update(g.collection('members').doc(heir.uid), { role: 'chef' });
-        b.update(g, { leader: heir.uid });
-      } else {
-        b.delete(g);
-        b.delete(fb.fs.collection('guildCodes').doc(O.guild.code));
-      }
+      if (others.length) { toast('Transfère d’abord la direction, ou dissous la guilde.'); return false; }
+      return O.dissolveGuild();                 // seul membre : quitter = dissoudre
     }
+    const g = fb.fs.collection('guilds').doc(O.guild.id), b = fb.fs.batch();
+    logTo(b, O.guild.id, 'depart', pseudo() + ' a quitté la guilde.');
     b.delete(g.collection('members').doc(O.user.uid));
     b.set(fb.fs.collection('users').doc(O.user.uid), { guildId: null }, { merge: true });
     await b.commit();
@@ -473,15 +551,107 @@ window.G = window.G || {};
     return true;
   };
   O.kickMember = async function (uid) {
-    if (!O.guild || myRole() !== 'chef' || uid === O.user.uid) return false;
-    await fb.fs.collection('guilds').doc(O.guild.id).collection('members').doc(uid).delete();
+    if (!needGuild() || !O.guildCan('kick', uid)) { toast('Tu n’as pas la permission d’exclure ce membre.'); return false; }
+    const t = memberOf(uid), b = fb.fs.batch();
+    b.delete(fb.fs.collection('guilds').doc(O.guild.id).collection('members').doc(uid));
+    logTo(b, O.guild.id, 'exclusion', pseudo() + ' a exclu ' + t.name + '.');
+    await b.commit();
     return true;
   };
+  const ROLE_NAME = { chef: 'chef', officier: 'officier', membre: 'membre', recrue: 'recrue' };
   O.setMemberRole = async function (uid, role) {
-    if (!O.guild || myRole() !== 'chef' || uid === O.user.uid || (role !== 'officier' && role !== 'membre')) return false;
-    await fb.fs.collection('guilds').doc(O.guild.id).collection('members').doc(uid).update({ role });
+    if (!needGuild()) return false;
+    const t = memberOf(uid); if (!t || ROLES.indexOf(role) < 1) return false;
+    const up = role === nextUp(t.role), down = role === nextDown(t.role);
+    if (!(up && O.guildCan('promote', uid)) && !(down && O.guildCan('demote', uid))) { toast('Tu n’as pas la permission de changer ce rôle.'); return false; }
+    const b = fb.fs.batch();
+    b.update(fb.fs.collection('guilds').doc(O.guild.id).collection('members').doc(uid), { role });
+    logTo(b, O.guild.id, up ? 'promotion' : 'retrogradation', pseudo() + (up ? ' a promu ' : ' a rétrogradé ') + t.name + ' ' + ROLE_NAME[role] + '.');
+    await b.commit();
     return true;
   };
+  O.promoteMember = uid => { const r = O.guildNextRole(uid, 1); return r ? O.setMemberRole(uid, r) : Promise.resolve(false); };
+  O.demoteMember = uid => { const r = O.guildNextRole(uid, -1); return r ? O.setMemberRole(uid, r) : Promise.resolve(false); };
+  /** Le chef passe la main : la cible devient chef, l'ancien chef devient officier (un seul lot) */
+  O.transferLeadership = async function (uid) {
+    if (!needGuild() || !O.guildCan('transfer', uid)) { toast('Seul le chef peut transférer la direction.'); return false; }
+    const t = memberOf(uid), g = fb.fs.collection('guilds').doc(O.guild.id), b = fb.fs.batch();
+    b.update(g.collection('members').doc(uid), { role: 'chef' });
+    b.update(g, { leader: uid });
+    b.update(g.collection('members').doc(O.user.uid), { role: 'officier' });
+    logTo(b, O.guild.id, 'transfert', pseudo() + ' a confié la direction à ' + t.name + '.');
+    await b.commit();
+    toast(t.name + ' dirige désormais la guilde.');
+    return true;
+  };
+  O.setGuildMotd = async function (text) {
+    if (!needGuild() || !O.guildCan('motd')) { toast('Seuls le chef et les officiers modifient le message du jour.'); return false; }
+    text = cleanText(text, 200);
+    if (text === O.guild.motd) return true;
+    const b = fb.fs.batch();
+    b.update(fb.fs.collection('guilds').doc(O.guild.id), { motd: text });
+    logTo(b, O.guild.id, 'motd', pseudo() + (text ? ' a modifié le message du jour.' : ' a effacé le message du jour.'));
+    await b.commit();
+    toast('Message du jour enregistré.');
+    return true;
+  };
+  O.setGuildOpen = async function (open) {
+    if (!needGuild() || !O.guildCan('settings')) { toast('Seul le chef règle le recrutement.'); return false; }
+    open = !!open;
+    const b = fb.fs.batch();
+    b.update(fb.fs.collection('guilds').doc(O.guild.id), { open });
+    b.update(fb.fs.collection('guildCodes').doc(O.guild.code), { open });
+    await b.commit();
+    toast(open ? 'Recrutement ouvert : le code d’invitation fonctionne.' : 'Recrutement fermé : le code ne permet plus d’entrer.');
+    return true;
+  };
+  O.setGuildEmblem = async function (emblem) {
+    if (!needGuild() || !O.guildCan('settings')) { toast('Seul le chef change l’emblème.'); return false; }
+    await fb.fs.collection('guilds').doc(O.guild.id).update({ emblem: normEmblem(emblem) });
+    return true;
+  };
+  O.deleteChatMessage = async function (id) {
+    if (!needGuild()) return false;
+    const m = O.chat.find(x => x.id === id); if (!m) return false;
+    if (m.uid !== O.user.uid && !O.guildCan('moderate')) { toast('Tu ne peux supprimer que tes propres messages.'); return false; }
+    await fb.fs.collection('guilds').doc(O.guild.id).collection('chat').doc(id).delete();
+    return true;
+  };
+  /** Dissolution (chef) : chat et journal effacés par lots, puis membres + guilde + code + profil en un lot final */
+  O.dissolveGuild = async function () {
+    if (!needGuild() || !O.guildCan('dissolve')) { toast('Seul le chef peut dissoudre la guilde.'); return false; }
+    const gid = O.guild.id, code = O.guild.code, g = fb.fs.collection('guilds').doc(gid);
+    for (const sub of ['chat', 'log']) {
+      const s = await g.collection(sub).get();
+      for (let i = 0; i < s.docs.length; i += 400) {
+        const b = fb.fs.batch();
+        s.docs.slice(i, i + 400).forEach(d => b.delete(d.ref));
+        await b.commit();
+      }
+    }
+    const b = fb.fs.batch();
+    O.guildMembers.filter(m => m.uid !== O.user.uid).forEach(m => b.delete(g.collection('members').doc(m.uid)));
+    b.delete(g.collection('members').doc(O.user.uid));
+    b.delete(g);
+    if (code) b.delete(fb.fs.collection('guildCodes').doc(code));
+    b.set(fb.fs.collection('users').doc(O.user.uid), { guildId: null }, { merge: true });
+    await b.commit();
+    toast('La guilde a été dissoute.');
+    return true;
+  };
+  O.guildLink = () => {
+    const code = O.guild && O.guild.code; if (!code) return '';
+    try { const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('guilde', code); return u.toString(); } catch (_) { return '?guilde=' + code; }
+  };
+  // lien d'invitation : https://…/?guilde=CODE → l'interface propose de rejoindre après connexion
+  let pendingGuild = null;
+  try { const q = new URLSearchParams(location.search).get('guilde'); if (q) pendingGuild = String(q).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || null; } catch (_) { /* rien */ }
+  O.pendingGuildCode = () => pendingGuild;
+  O.clearPendingGuild = () => {
+    pendingGuild = null;
+    try { const u = new URL(location.href); u.searchParams.delete('guilde'); history.replaceState(null, '', u.toString()); } catch (_) { /* rien */ }
+  };
+
   const chatLog = [];
   O.sendChat = async function (text) {
     if (!O.guild || !O.user) return false;
@@ -696,6 +866,7 @@ window.G = window.G || {};
       guestDamage(e, dealt, el, crit) { pushEv({ k: 'dmg', id: e.netId, d: Math.round(dealt), el: el || 'physique', c: crit ? 1 : 0 }); },
       door() { pushEv({ k: 'door' }); },
       down() { pushEv({ k: 'down' }); },
+      objUse(key) { pushEv({ k: 'use', key: String(key).slice(0, 24) }); },      // invité → hôte : ouvrir un coffre / objet partagé
     }, () => {
       const out = [], ri = G.game.run ? G.game.run.roomIndex : -1;
       S.others.forEach(o => { if (o.proxy && o.st && o.st.ri === ri && !o.gone) out.push(o.proxy); });
@@ -829,6 +1000,7 @@ window.G = window.G || {};
       case 'dmg': if (S.role === 'host') G.game.net.applyRemoteDamage(String(ev.id), num(ev.d, 0), ev.el, !!ev.c); break;
       case 'hurt': if (fromHost && ev.to === O.user.uid) G.game.net.hurtLocal(num(ev.d, 0), { element: ev.el || 'physique', slow: num(ev.sl, 0), source: 'net' }); break;
       case 'door': if (S.role === 'host') G.game.net.door(); break;
+      case 'use': if (S.role === 'host' && typeof ev.key === 'string') G.game.net.objRequest(ev.key); break;
       case 'room': if (fromHost) { let rd = null; try { rd = ev.rd ? JSON.parse(ev.rd) : null; } catch (_) { rd = null; } G.game.net.gotoRoom(num(ev.i, -1), rd); } break;
       case 'clear': if (fromHost && G.game.run && G.game.run.roomIndex === ev.i) G.game.net.clearRoom(); break;
       case 'end':
@@ -928,6 +1100,9 @@ window.G = window.G || {};
   }
   O.init = init;
   O.ROLES = ROLES;
+  O.EMBLEM_ICONS = EMBLEM_ICONS;
+  O.EMBLEM_COLORS = EMBLEM_COLORS;
+  O.normEmblem = normEmblem;
   O.MAX_PLAYERS = MAX_PLAYERS;
   O.esc = esc;
   G.Online = O;

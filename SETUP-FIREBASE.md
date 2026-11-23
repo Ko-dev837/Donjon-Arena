@@ -69,6 +69,8 @@ Ce qui protège tes données, ce sont **les règles** (étape 7) et **les domain
 
 ## Étape 7 — Publier les règles de sécurité
 
+> **Mise à jour « page Guilde » (rôles, message du jour, journal, recrutement) :** si tu avais déjà publié les règles, republie le contenu actuel de `firestore.rules` (Firestore → Règles → Publier), sinon les nouvelles actions de guilde seront refusées (`permission-denied`).
+
 Sans ces règles, la base reste fermée et le mode en ligne affiche des erreurs « permission-denied ».
 
 **Firestore :**
@@ -138,7 +140,7 @@ La connexion Google ne marche que sur les domaines que tu autorises.
 Le jeu n'enregistre que le strict nécessaire :
 - ton **identifiant Firebase** (uid), ton **pseudo** et, si tu en as une, ta **photo Google** ;
 - la classe, le rang, le niveau et le skin de ton héros ;
-- ton code ami, ta guilde, tes amis, tes demandes d'ami et les messages de guilde.
+- ton code ami, ta guilde, tes amis, tes demandes d'ami, les messages de guilde et le journal de guilde (30 derniers événements affichés).
 
 Le jeu n'enregistre **pas** ton adresse e-mail. Ta sauvegarde de jeu reste dans le `localStorage` de ton navigateur.
 

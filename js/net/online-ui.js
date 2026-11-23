@@ -1,7 +1,7 @@
 window.G = window.G || {};
 /* =====================================================================
    js/net/online-ui.js — interface du mode en ligne
-   - Panneau « En ligne » du camp (G.Panels) : onglets Compte, Amis, Guilde, Groupe
+   - Panneau « En ligne » du camp (G.Panels) : onglets Compte, Amis, Groupe ; « Guilde » ouvre la page dédiée (guild-ui.js)
    - Notifications discrètes (invitation reçue, ami connecté, demande d'ami)
    - En jeu : nom + barre de PV au-dessus des alliés, HUD de groupe, jauge de réanimation
    Réutilise le design system (ds-card, ds-btn, ds-chip, ds-badge, ds-input, ds-segmented, ds-bar, ds-notify…).
@@ -119,8 +119,10 @@ window.G = window.G || {};
     if (f.inGame) return '<span class="net-dot game"></span>En donjon';
     return '<span class="net-dot on"></span>En ligne';
   }
+  function goGuild() { if (G.GuildUI && G.GuildUI.open) G.GuildUI.open(); else if (G.UI && G.UI.setTab) G.UI.setTab('guilde'); }
   function render(c) {
     injectStyle();
+    if (panelTab === 'guilde') panelTab = 'compte';
     mounted = c;
     const o = O();
     if (!o) { c.innerHTML = '<div class="ds-empty">Module en ligne absent.</div>'; return; }
@@ -132,11 +134,13 @@ window.G = window.G || {};
     c.innerHTML = `<div class="net-root" data-net-root><div class="ds-segmented net-tabs" role="group" aria-label="Mode en ligne">${seg}</div><div class="net-body"></div></div>`;
     const body = c.querySelector('.net-body');
     try {
-      ({ compte: tabCompte, amis: tabAmis, guilde: tabGuilde, groupe: tabGroupe }[panelTab] || tabCompte)(body, o);
+      ({ compte: tabCompte, amis: tabAmis, groupe: tabGroupe }[panelTab] || tabCompte)(body, o);
     } catch (e) { console.error('[OnlineUI] onglet ' + panelTab, e); body.innerHTML = '<div class="ds-empty">Onglet indisponible.</div>'; }
     c.querySelector('.net-tabs').addEventListener('click', ev => {
       const b = ev.target.closest('[data-tab]'); if (!b || b.dataset.tab === panelTab) return;
-      panelTab = b.dataset.tab; sfx('click'); render(c);
+      sfx('click');
+      if (b.dataset.tab === 'guilde') { goGuild(); return; }      // la guilde a sa propre page (js/net/guild-ui.js)
+      panelTab = b.dataset.tab; render(c);
     });
     c.querySelector('[data-net-root]').addEventListener('click', onAction);
     c.querySelector('[data-net-root]').addEventListener('keydown', ev => {
@@ -202,33 +206,6 @@ window.G = window.G || {};
       : `<div class="ds-empty"><div>${o.mode === 'local' ? 'Ouvre le jeu dans un autre onglet avec ?net=local.' : 'Aucun ami pour l’instant : partage ton code ami !'}</div></div>`;
     body.innerHTML = h;
   }
-  function tabGuilde(body, o) {
-    if (o.mode !== 'firebase') return offline(body, o, o.mode === 'local' ? 'Guildes indisponibles en coop locale' : null);
-    if (!o.user) { body.innerHTML = '<div class="ds-empty"><div class="ds-empty__title">Connecte-toi (onglet Compte).</div></div>'; return; }
-    const g = o.guild;
-    if (!g) {
-      body.innerHTML = `<div class="ds-section-title">Créer une guilde</div>
-        <div class="ds-field"><span class="ds-label">Nom (3 à 24 caractères)</span><input class="ds-input" maxlength="24" data-in="gname" placeholder="Les Gardiens du Néant"/></div>
-        <div class="ds-field"><span class="ds-label">Tag (3 ou 4 lettres)</span><div class="net-row"><input class="ds-input" maxlength="4" data-in="gtag" data-enter="gcreate" placeholder="GDN" style="text-transform:uppercase"/>${btn('Créer', 'gcreate', 'ds-btn--primary')}</div></div>
-        <div class="ds-section-title">Rejoindre une guilde</div>
-        <div class="net-row"><input class="ds-input" maxlength="6" data-in="gcode" data-enter="gjoin" placeholder="Code de guilde" style="text-transform:uppercase"/>${btn('Rejoindre', 'gjoin', 'ds-btn--primary')}</div>`;
-      return;
-    }
-    const role = o.myGuildRole(), uid = o.user.uid;
-    const ROLE_L = { chef: 'Chef', officier: 'Officier', membre: 'Membre' }, ROLE_C = { chef: 'ds-badge--gold', officier: 'ds-badge--violet', membre: '' };
-    body.innerHTML = `<div class="ds-card net-item"><span class="net-ico">🏰</span><div class="net-main"><div class="net-name">[${esc(g.tag)}] ${esc(g.name)}</div><div class="net-sub">Code d’invitation : <b class="net-code" style="font-size:14px">${esc(g.code)}</b></div></div>${btn('Quitter', 'gleave', 'ds-btn--danger')}</div>
-      <div class="ds-section-title">Membres <span class="ds-section-title__aside">${o.guildMembers.length}</span></div>
-      ${o.guildMembers.map(m => `<div class="ds-card ds-card--flat net-item"><span class="net-dot ${m.online || m.uid === uid ? 'on' : ''}"></span><div class="net-main"><div class="net-name">${esc(m.name)}${m.uid === uid ? ' (toi)' : ''}</div><div class="net-sub"><span class="ds-badge ${ROLE_C[m.role]}">${ROLE_L[m.role]}</span></div></div>
-        ${role === 'chef' && m.uid !== uid ? (m.role === 'membre' ? btn('Promouvoir', 'gpromote:' + m.uid) : btn('Rétrograder', 'gdemote:' + m.uid)) + btn('Exclure', 'gkick:' + m.uid, 'ds-btn--ghost') : ''}</div>`).join('')}
-      <div class="ds-section-title">Discussion</div>
-      <div class="net-chat" data-chat>${chatHTML(o)}</div>
-      <div class="net-row"><input class="ds-input" maxlength="200" data-in="chat" data-enter="gsend" placeholder="Écris un message…"/>${btn('Envoyer', 'gsend', 'ds-btn--primary')}</div>`;
-    const ch = body.querySelector('[data-chat]'); if (ch) ch.scrollTop = ch.scrollHeight;
-  }
-  function chatHTML(o) {
-    if (!o.chat.length) return '<div class="net-note">Aucun message. Dis bonjour à ta guilde !</div>';
-    return o.chat.map(m => { const d = new Date(m.at); return `<div class="net-msg${o.user && m.uid === o.user.uid ? ' me' : ''}"><b>${esc(m.name)}</b> ${esc(m.text)}<i>${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}</i></div>`; }).join('');
-  }
   function tabGroupe(body, o) {
     if (o.mode === 'off' || o.mode === 'loading') return offline(body, o);
     if (o.mode === 'firebase' && !o.user) { body.innerHTML = '<div class="ds-empty"><div class="ds-empty__title">Connecte-toi (onglet Compte).</div></div>'; return; }
@@ -288,13 +265,6 @@ window.G = window.G || {};
       case 'decline': run(o.declineFriend(arg)); break;
       case 'unfriend': run(o.removeFriend(arg)); break;
       case 'invite': run(o.invite(arg).then(() => { panelTab = 'groupe'; })); break;
-      case 'gcreate': run(o.createGuild(val('gname'), val('gtag'))); break;
-      case 'gjoin': run(o.joinGuild(val('gcode'))); break;
-      case 'gleave': run(o.leaveGuild()); break;
-      case 'gkick': run(o.kickMember(arg)); break;
-      case 'gpromote': run(o.setMemberRole(arg, 'officier')); break;
-      case 'gdemote': run(o.setMemberRole(arg, 'membre')); break;
-      case 'gsend': { const i = mounted.querySelector('[data-in="chat"]'); const t = i ? i.value : ''; Promise.resolve(o.sendChat(t)).then(ok => { if (ok && i) i.value = ''; }).catch(e => G.UI.toast('Message refusé : ' + (e && e.code || 'erreur'))); break; }
       case 'lcreate': run(o.createLobby()); break;
       case 'lleave': run(o.leaveLobby()); break;
       case 'join': run(o.acceptInvite(arg)); break;
@@ -315,12 +285,8 @@ window.G = window.G || {};
       refreshQ = false;
       if (!mounted || !mounted.isConnected) return;
       const a = document.activeElement;
-      // ne pas effacer une saisie en cours : seul le fil de discussion est rafraîchi
-      if (a && mounted.contains(a) && a.tagName === 'INPUT' && a.value) {
-        const ch = mounted.querySelector('[data-chat]'); const o = O();
-        if (ch && o) { ch.innerHTML = chatHTML(o); ch.scrollTop = ch.scrollHeight; }
-        return;
-      }
+      // ne pas effacer une saisie en cours
+      if (a && mounted.contains(a) && a.tagName === 'INPUT' && a.value) return;
       const keep = a && mounted.contains(a) && a.dataset ? a.dataset.in : null;
       render(mounted);
       if (keep) { const i = mounted.querySelector('[data-in="' + keep + '"]'); if (i) i.focus(); }
@@ -392,7 +358,9 @@ window.G = window.G || {};
   };
   G.OnlineUI = {
     notify, attachName, frame, refresh,
-    open(tab) { if (tab) panelTab = tab; if (G.UI && G.UI.setTab) G.UI.setTab('enligne'); refresh(); },
+    open(tab) { if (tab === 'guilde') { goGuild(); return; } if (tab) panelTab = tab; if (G.UI && G.UI.setTab) G.UI.setTab('enligne'); refresh(); },
+    // petits utilitaires partagés avec la page Guilde (js/net/guild-ui.js)
+    h: { injectStyle, rankBadge, classIcon, className, statusOf },
     get tab() { return panelTab; },
   };
   function boot() {

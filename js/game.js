@@ -257,7 +257,19 @@ window.G = window.G || {};
   // role : null (solo, comportement historique inchangé) | 'host' (simule les ennemis) | 'guest' (ennemis = marionnettes)
   // cb   : rappels fournis par G.Online : hurtRemote(proxy, dmg, o), guestDamage(e, dealt, el, crit), door(), down()
   // remotes() : mandataires des autres joueurs { remote:true, uid, pos:{x,z}, r, dead, face, dir } (lus par l'IA de l'hôte)
-  const net = { role: null, cb: {}, seq: 0, aggro: null, remotes: () => [] };
+  const net = { role: null, cb: {}, seq: 0, aggro: null, remotes: () => [], objs: {}, opened: {} };
+  // Objets de salle partagés (coffres, reliquaire, passage secret…) : l'hôte seul les ouvre ; l'état « ouvert »
+  // part dans l'instantané (op) et chaque client applique l'ouverture pour lui (butin propre à chaque joueur).
+  //   objs[clé]   = { hostUse() (hôte : ouverture demandée par un invité), apply(info) (invité : l'hôte a ouvert) }
+  //   opened[clé] = info (1, 'm' pour une mimique…)
+  function netResetObjs() { net.objs = {}; net.opened = {}; }
+  /** Graine déterministe pour la mise en place d'une salle (hôte et invités tirent les mêmes valeurs) */
+  function withSeed(seed, fn) {
+    if (!net.role || !G.rng) return fn();
+    const orig = G.rng.float, rnd = lcg((Math.floor(num(seed, 1)) >>> 0) ^ 0x5bd1e995);
+    G.rng.float = rnd;
+    try { return fn(); } finally { G.rng.float = orig; }
+  }
   const netCall = (k, ...a) => { const f = net.cb && net.cb[k]; if (typeof f === 'function') { try { return f(...a); } catch (e) { console.warn('[game] net ' + k, e); } } return undefined; };
   /** Cible de l'IA de l'hôte : joueur vivant le plus proche (local ou distant) */
   function netPickAggro(e) {
@@ -273,6 +285,24 @@ window.G = window.G || {};
     return best && best !== p ? best : null;
   }
   const tgtP = () => net.aggro || run.player;
+  /** Invité : coffre de salle tel que placé par l'hôte (visuel + ouverture demandée à l'hôte) */
+  function netGuestChest(x, z) {
+    const r = run;
+    const c = safe(G.GFX, 'makeChest') || fallbackObj(0xc8902a, 0.5);
+    c.position.set(x, 0, z); c.rotation.y = 0;
+    r.root.add(c);
+    r.chest = c; r.chestState = 'waiting'; r.netChestReq = null;
+    FX('ring', V3(x, 0.05, z), 0xffd23f, 2.2, 0.8);
+    sfx('spawn');
+    net.objs.chest = { apply() { if (run === r && r.chest && r.chestState !== 'done') { r.chestState = 'opening'; resolveChest(true); } } };
+  }
+  /** Invité : l'hôte a ouvert un objet → on applique l'ouverture chez soi (une seule fois) */
+  function netApplyOpen(key, info) {
+    if (key in net.opened) return;
+    net.opened[key] = info === undefined || info === null ? 1 : info;
+    const d = net.objs[key];
+    if (d && typeof d.apply === 'function' && !d._applied) { d._applied = true; try { d.apply(net.opened[key]); } catch (e) { console.warn('[game] net obj ' + key, e); } }
+  }
 
   const SYSTEMS = ['Progress', 'Skills', 'Talents', 'Inventory', 'Necro', 'Portals', 'Cosmetics'];
   function ensureAll(p) { SYSTEMS.forEach(s => safe(G[s], 'ensureProfile', [p])); return p; }
@@ -1185,6 +1215,7 @@ window.G = window.G || {};
     const rd = rooms[index] || { layout: 'arena', waves: [] };
     const type = roomKindOf(rd);
     r.roomIndex = index; r.roomData = rd; r.roomTime = 0;
+    netResetObjs(); r.netChestReq = null;
     const isFinalBoss = type === 'boss';
     r.isBoss = isFinalBoss;
     r.bossRoom = isFinalBoss || type === 'miniboss';
@@ -1234,7 +1265,8 @@ window.G = window.G || {};
       const rt = G.RoomTypes && G.RoomTypes.get && G.RoomTypes.get(type);
       if (rt) {
         r.roomKind = 'ext'; r.rt = rt;
-        try { if (typeof rt.start === 'function' && net.role !== 'guest') rt.start(rtCtx(r)); } catch (e) { console.warn('[game] RoomType.start ' + type, e); }
+        // coop : la salle est mise en place chez TOUS les joueurs avec la même graine (mêmes autels, coffres, pièges)
+        try { if (typeof rt.start === 'function') withSeed(num(rd.seed, index + 1), () => rt.start(rtCtx(r))); } catch (e) { console.warn('[game] RoomType.start ' + type, e); }
       } else if (rd.waves && rd.waves.length) r.roomKind = 'combat';
       else { r.roomKind = 'combat'; roomCleared(true); }
     }
@@ -1281,6 +1313,10 @@ window.G = window.G || {};
     if (r.ended) return;
     r.roomTime += dt;
     if (net.role === 'guest') {      // invité : vagues, coffres et fin de salle décidés par l'hôte ; la porte demande le changement
+      // salles spéciales : animations, pièges et objets utilisables tournent aussi chez l'invité (fin de salle = hôte)
+      if (r.roomKind === 'ext' && r.rt && typeof r.rt.update === 'function' && r.roomState !== 'cleared') { try { r.rt.update(dt, rtCtx(r)); } catch (e) { console.warn('[game] RoomType (invité)', e); } if (run !== r) return; }
+      // coffre de salle créé par l'instantané de l'hôte : l'invité demande l'ouverture en s'approchant
+      if (r.chest && r.chestState === 'waiting' && !p.dead && r.roomTime - (r.netChestReq || -9) > 1.5 && Math.hypot(p.pos.x - r.chest.position.x, p.pos.z - r.chest.position.z) < 2.0) { r.netChestReq = r.roomTime; netCall('objUse', 'chest'); }     // renvoyée toutes les 1,5 s tant que l'hôte n'a pas ouvert
       if (r.roomState === 'cleared' && !r.transition && p.pos.z < -HALF && !p.dead) { r.transition = true; r.netDoorT = 0; sfx('door'); netCall('door'); }
       else if (r.transition && r.netDoorT != null && (r.netDoorT += dt) > 4) { r.transition = false; r.netDoorT = null; }     // pas de réponse : on peut réessayer
       return;
@@ -2189,6 +2225,7 @@ window.G = window.G || {};
     c.rotation.y = 0;
     r.root.add(c);
     r.chest = c; r.chestState = 'waiting'; r.roomState = 'chest';
+    if (net.role === 'host') net.objs.chest = { hostUse() { if (run === r && r.chestState === 'waiting') openChestGame(); } };
     FX('burst', V3(c.position.x, 0.6, c.position.z), 0xffd23f, 22, { speed: 4, up: 5, life: 0.8, size: 0.18, gravity: 8 });
     FX('ring', V3(c.position.x, 0.05, c.position.z), 0xffd23f, 2.2, 0.8);
     sfx('spawn');
@@ -2237,6 +2274,7 @@ window.G = window.G || {};
       banner('Le coffre a mangé votre Or !' + (lost > 0 ? '<br><small>-' + lost + ' or</small>' : ''), 2.4);
     }
     r.chestState = 'done';
+    if (net.role === 'host') net.opened.chest = 1;
   }
   function activateUltimate() {
     const r = run, p = r.player;
@@ -3624,7 +3662,7 @@ window.G = window.G || {};
       color: TRAIL_COLORS[type] || (o.element && EL_HEX[o.element]) || 0xffffff,
       homing: num(o.homing, 0), onHit: o.onHit || null, onEnd: o.onEnd || null, counter: !!r.castCounter,
       source: o.source || (owner === 'minion' ? 'minion' : 'player'), knockback: num(o.knockback, 0), tags: o.tags || null,
-      dodgeChecked: false, ownerRef: o.ownerRef || null,
+      dodgeChecked: false, ownerRef: o.ownerRef || null, netLocal: !!o.netLocal,
     };
     r.projectiles.push(pr);
     return pr;
@@ -3750,7 +3788,7 @@ window.G = window.G || {};
             hurtPlayer(pr.dmg, { slow: pr.slow, element: pr.element, source: 'projectile' }); endProjectile(pr); continue;
           }
         }
-        if (net.role === 'host' && !pr.dead) {     // projectiles ennemis contre les alliés distants
+        if (net.role === 'host' && !pr.dead && !pr.netLocal) {     // projectiles ennemis contre les alliés distants (pas les pièges : locaux à chaque joueur)
           const rl = net.remotes() || [];
           let hitR = null;
           for (let k = 0; k < rl.length; k++) { const q = rl[k]; if (q && !q.dead && q.pos && Math.hypot(q.pos.x - m.x, q.pos.z - m.z) < num(q.r, 0.5) + pr.radius) { hitR = q; break; } }
@@ -4166,7 +4204,7 @@ window.G = window.G || {};
     if (run !== r) return;
     updateFade(dt);
     if (run !== r) return;
-    if (r.modal) { updateHUD(); return; }      // mini-jeu du coffre : le monde est figé
+    if (r.modal && !net.role) { updateHUD(); return; }      // mini-jeu / dialogue : le monde est figé (en coop, le monde partagé continue)
     if (!r.ended) r.time += dt;
     safe(r.room, 'update', [dt, clockTime]);
     updateBuffs(dt);
@@ -4433,7 +4471,11 @@ window.G = window.G || {};
         if (e.dead || !e.netId) continue;
         en.push([e.netId, e.boss ? '' : e.id, r2(e.pos.x), r2(e.pos.z), r2(e.mesh.rotation.y), Math.max(0, Math.ceil(e.pv)), Math.round(e.pvMax), (e.elite ? 1 : 0) | (e.boss ? 2 : 0), r2(e.netW), r2(e.netA)]);
       }
-      return { ri: r.roomIndex, rs: r.roomState, en };
+      const out = { ri: r.roomIndex, rs: r.roomState, en };
+      if (r.chest) out.ch = [r2(r.chest.position.x), r2(r.chest.position.z), r.chestState === 'waiting' ? 0 : 1];
+      const op = Object.keys(net.opened);
+      if (op.length) out.op = op.map(k => [k, net.opened[k]]);
+      return out;
     },
     /** Invité : applique un instantané (création / mise à jour / mort des marionnettes) */
     applySnapshot(s) {
@@ -4468,6 +4510,10 @@ window.G = window.G || {};
         e.label.set(e.pv / e.pvMax);
         if (e.boss && !r.bossIntro) HUD('setBoss', e.def.name, e.pv / e.pvMax);
       }
+      // objets de salle : coffre de l'hôte, puis ouvertures (idempotent : un message manqué se rattrape au suivant)
+      if (Array.isArray(s.ch) && !r.chest && run === r) netGuestChest(num(s.ch[0], 0), num(s.ch[1], 0));
+      const ops = Array.isArray(s.op) ? s.op : [];
+      for (let i = 0; i < ops.length; i++) netApplyOpen(String(ops[i] && ops[i][0]), ops[i] && ops[i][1]);
       const list = r.enemies.slice();
       for (let i = 0; i < list.length; i++) {
         const e = list[i];
@@ -4519,6 +4565,19 @@ window.G = window.G || {};
       return true;
     },
     clearRoom() { const r = run; if (r && !r.finished && r.roomState !== 'cleared') roomCleared(); },
+    // --- objets de salle partagés (utilisés par sys/events.js) ---
+    /** Déclare un objet partagé de la salle courante. def = { hostUse(), apply(info) } */
+    objRegister(key, def) {
+      key = String(key); net.objs[key] = def || {};
+      if (net.role === 'guest' && key in net.opened && def && typeof def.apply === 'function' && !def._applied) { def._applied = true; try { def.apply(net.opened[key]); } catch (e) { console.warn('[game] net obj ' + key, e); } }
+    },
+    /** Avant d'ouvrir : true = ouvrir localement (solo / hôte) ; false = invité (demande envoyée à l'hôte) */
+    objUse(key) { if (net.role !== 'guest') return true; netCall('objUse', String(key)); return false; },
+    /** Hôte : l'objet vient d'être ouvert (info facultative, ex. 'm' = mimique) */
+    objDone(key, info) { if (net.role === 'host') net.opened[String(key)] = info === undefined ? 1 : info; },
+    /** Hôte : un invité demande l'ouverture */
+    objRequest(key) { const d = net.objs[String(key)]; if (net.role === 'host' && d && typeof d.hostUse === 'function' && !(String(key) in net.opened)) { try { d.hostUse(); } catch (e) { console.warn('[game] net obj ' + key, e); } } },
+    isOpened(key) { return String(key) in net.opened; },
     finish(victory) { const r = run; if (!r || r.finished) return; if (G.core) G.core.paused = false; finishRun(!!victory, victory ? 'victoire' : 'groupe'); },
     wipe() { failRun('net', 'Le groupe est anéanti…'); },
     hurtLocal(dmg, o) { const prev = net.aggro; net.aggro = null; try { return hurtPlayer(num(dmg, 0), o || {}); } finally { net.aggro = prev; } },

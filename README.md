@@ -29,11 +29,11 @@ Le jeu est aussi jouable au tactile.
 
 ## Mode en ligne
 
-Onglet **En ligne** du camp, avec quatre sous-onglets : **Compte**, **Amis**, **Guilde** et **Groupe**.
+Onglet **En ligne** du camp, avec les sous-onglets **Compte**, **Amis** et **Groupe** ; l'onglet **Guilde** ouvre la page **Guilde** (entrée juste après « En ligne » dans la barre latérale).
 
 - **Compte :** connexion avec Google, pseudo et code ami à 6 caractères.
 - **Amis :** ajout par code ami, demandes à accepter ou refuser, statut (en ligne, en donjon, hors ligne) et invitation dans ton groupe.
-- **Guildes :** création avec un nom et un tag de 3 ou 4 lettres, puis adhésion par code. Il y a trois rôles (chef, officier, membre) : le chef promeut et exclut. Le chat de guilde garde les 50 derniers messages, avec un anti-spam (un message toutes les 2 secondes au plus).
+- **Guildes (page dédiée) :** création avec un nom, un tag de 3 ou 4 lettres et un emblème (12 icônes, 8 couleurs), adhésion par code, QR code ou lien `?guilde=CODE`. Quatre rôles : **chef > officier > membre > recrue** (les nouveaux arrivent recrues). L'officier promeut les recrues en membres, exclut membres et recrues, modifie le message du jour et modère le chat ; le chef peut tout faire (rétrograder, transférer la direction, fermer le recrutement, changer l'emblème, dissoudre). Liste des membres avec recherche, classe, rang, niveau, statut et date d'arrivée ; tableau des permissions ; journal des 30 derniers événements. Le chat garde les 50 derniers messages, avec un anti-spam (un message toutes les 2 secondes au plus).
 - **Groupe et coop (2 à 4 joueurs) :** le chef choisit un portail. Les règles de rang sont vérifiées pour **chaque** joueur. Quand tout le monde est prêt, tous partent en même temps dans le même donjon, avec la même graine.
 
 Le serveur est **Firebase** (Google). Pour l'activer, suis **[SETUP-FIREBASE.md](SETUP-FIREBASE.md)**, puis remplis `js/net/firebase-config.js`.
@@ -67,6 +67,7 @@ La coop locale utilise `BroadcastChannel`, qui ne marche qu'entre onglets de la 
 | `js/net/transport.js` | transport abstrait : `local` (BroadcastChannel) ou `firebase` (Realtime Database) |
 | `js/net/online.js` | `G.Online` : auth, profil, présence, amis, guildes, chat, groupe, synchronisation coop |
 | `js/net/online-ui.js` | panneau « En ligne », notifications, noms et HUD de groupe en jeu |
+| `js/net/guild-ui.js` | page « Guilde » : membres et rôles, permissions, message du jour, journal, chat, paramètres |
 | `firestore.rules`, `database.rules.json` | règles de sécurité à publier dans la console Firebase |
 | `js/game.js` (`G.game.net`) | pont réseau : rôle hôte ou invité, marionnettes, dégâts distants, réanimation |
 
