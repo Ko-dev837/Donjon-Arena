@@ -177,7 +177,10 @@ window.G = window.G || {};
     const o = O();
     if (!o) { c.innerHTML = '<div class="ds-empty">Module en ligne absent.</div>'; return; }
     let h;
-    try { h = body(o); } catch (e) { console.error('[GuildUI]', e); h = '<div class="ds-empty">Page indisponible.</div>'; }
+    try { h = body(o); } catch (e) {
+      console.error('[GuildUI]', e);
+      h = '<div class="ds-empty"><div class="ds-empty__title">Page indisponible</div><div>Une ancienne version du jeu est peut-être encore en cache : recharge avec <b>Ctrl + F5</b>.</div><div style="opacity:.6;font-size:12px;margin-top:6px">' + String(e && e.message || e).replace(/[<>&]/g, '') + '</div></div>';
+    }
     c.innerHTML = `<div class="gd-root" data-guild-root>${h}</div>`;
     const root = c.querySelector('[data-guild-root]');
     root.addEventListener('click', onAction);
@@ -480,7 +483,7 @@ window.G = window.G || {};
   // Enregistrement : juste après « En ligne » (order 9)
   // ------------------------------------------------------------------
   const PANEL = {
-    id: 'guilde', title: 'Guilde', icon: 'shield', order: 9.5,
+    id: 'guilde', title: 'Guilde', icon: 'shield', order: 8.9,
     visible: () => true,
     badge() { const o = O(); return o && o.pendingGuildCode && o.pendingGuildCode() ? true : ''; },
     render(c) { render(c); },
