@@ -1482,11 +1482,24 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       const ids = [kit.cast1, kit.cast2, kit.cast3, kit.super].filter((x) => byId[x]);
       return '<div class="sk-sect">Départ<small>le kit de base de ta classe</small></div><div class="sk-list">' + ids.map((id) => rowHtml(byId[id])).join('') + '</div>';
     }
+    // découverte progressive : un déblocage n'est révélé qu'une fois atteint le palier précédent
+    // (seul le prochain palier est visible ; les suivants restent mystérieux)
+    function tierLevels() {
+      const ls = unlocks.map((u) => u.level).concat(specs.map((s) => s.unlockLevel || 15));
+      return Array.from(new Set(ls.filter((x) => x > 0))).sort((a, b) => a - b);
+    }
+    function nextTier() { const lv = heroLv(); return tierLevels().find((x) => x > lv) || Infinity; }
+    function prevTierOf(level) { const t = tierLevels().filter((x) => x < level); return t.length ? t[t.length - 1] : 1; }
+    function revealed(level) { return heroLv() >= level || level <= nextTier(); }
+    function mysteryRow(level) {
+      return '<div class="sk-row sk-mystery" style="opacity:.75"><span class="sk-myst-ic" style="display:grid;place-items:center;width:44px;height:44px;border-radius:12px;border:1px dashed var(--k-line2,#3a4766);font:700 20px/1 var(--ds-font-display,inherit);color:var(--k-tx3,#7d8db0)">?</span>'
+        + '<div class="sk-myst-t"><div style="font-weight:700;letter-spacing:.08em">Compétence inconnue</div><div style="font-size:12.5px;color:var(--k-tx3,#7d8db0)">Se révèle quand tu atteins le niveau ' + prevTierOf(level) + '.</div></div></div>';
+    }
     function levelBlock() {
       if (!unlocks.length) return '';
-      return '<div class="sk-sect">Débloquées par niveau<small>niveaux 5, 10, 15, 20, 25</small></div><div class="sk-tl">' + unlocks.map((u) => {
-        const ok = heroLv() >= u.level;
-        return '<div class="sk-tli' + (ok ? ' ok' : '') + '"><div class="sk-tlr"><span class="sk-tlb ' + (ok ? 'ok' : 'lock') + '">' + (ok ? ic('check', 16) : u.level) + (ok ? '' : '') + '</span><span class="sk-tll"></span></div><div class="sk-tlc">' + rowHtml(u.d) + '</div></div>';
+      return '<div class="sk-sect">Débloquées par niveau<small>la prochaine compétence se révèle au palier précédent</small></div><div class="sk-tl">' + unlocks.map((u) => {
+        const ok = heroLv() >= u.level, show = revealed(u.level);
+        return '<div class="sk-tli' + (ok ? ' ok' : '') + '"><div class="sk-tlr"><span class="sk-tlb ' + (ok ? 'ok' : 'lock') + '">' + (ok ? ic('check', 16) : u.level) + '</span><span class="sk-tll"></span></div><div class="sk-tlc">' + (show ? rowHtml(u.d) : mysteryRow(u.level)) + '</div></div>';
       }).join('') + '</div>';
     }
     function specBlock() {
@@ -1495,6 +1508,9 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       let h = '<div class="sk-sect">Spécialisation<small>niveau 15 · un choix entre deux voies</small></div>';
       if (ui.confirm === 'resetspec') h += '<div class="sk-confirm"><span>Abandonner <b>' + esc(sp && sp.name) + '</b> pour <b>' + rc + ' or</b> ?</span>' + btn('ds-btn--danger ds-btn--sm', 'Confirmer', 'data-act="resetspec-ok"' + (num(p.gold, 0) < rc ? ' disabled' : '')) + btn('ds-btn--ghost ds-btn--sm', 'Annuler', 'data-act="cancel"') + '</div>';
       h += '<div class="sk-specs">';
+      if (!sp && !revealed(specs[0].unlockLevel || 15)) {
+        return h + '<div class="sk-specs"><div class="sk-sc is-off"><div class="sk-sch">' + ic('lock', 20) + '<div class="sk-scn">Deux voies mystérieuses</div></div><div class="sk-scd">Elles se révèlent quand tu atteins le niveau ' + prevTierOf(specs[0].unlockLevel || 15) + '.</div></div></div>';
+      }
       specs.forEach((s) => {
         const act = sp && sp.id === s.id, locked = lvl < s.unlockLevel, off = sp && !act, d = specSkills[s.id] || (s.skillId && byId[s.skillId]);
         h += '<div class="sk-sc' + (act ? ' is-active' : '') + (off ? ' is-off' : '') + '"><div class="sk-sch">' + ic(act ? 'crown' : 'star', 20) + '<div class="sk-scn">' + esc(s.name) + '</div>' + (act ? '<span class="sk-tag g">Choisie</span>' : '') + '</div><div class="sk-scd">' + rich(s.desc, null) + '</div>';
@@ -1509,7 +1525,7 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       return h + '</div>' + (!sp ? '<div class="sk-note">Choix définitif, modifiable plus tard contre de l\'or.</div>' : '');
     }
     function passiveBlock() {
-      const pas = unlocks.map((u) => u.d).filter((d) => d.kind === 'passive');
+      const pas = unlocks.filter((u) => revealed(u.level)).map((u) => u.d).filter((d) => d.kind === 'passive');
       if (!classPassive && !pas.length) return '';
       let h = '<div class="sk-sect">Passifs<small>toujours actifs, sans emplacement</small></div><div class="sk-pas">';
       if (classPassive) h += '<div class="sk-cbox"><div class="sk-cpas-n">' + ic('star-fill', 14) + esc(classPassive.name) + '<span class="sk-tag ok">Classe</span></div><div class="sk-ctxt">' + rich(classPassive.desc, null) + '</div></div>';
