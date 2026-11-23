@@ -93,16 +93,16 @@ window.G = window.G || {};
     if (ri >= 3 && (ri === 4 || G.rng.chance(D.uniqueChance))) {
       let pool = Object.values(items.bases).filter((b) => b.unique && b.rarity === items.rarities[ri].id && rIdx(b.rankReq) <= ranki && slotOk(b));
       const pref = pool.filter((b) => classOk(b, classe));
-      if (pref.length && (!classe || G.rng.chance(0.85))) pool = pref;
+      if (classe) pool = pref; // jamais d'objet réservé à une autre classe
       if (pool.length) return G.rng.pick(pool).id;
     }
     // pièce d'ensemble
     if ((ri === 2 || ri === 3) && G.rng.chance(D.setChance)) {
       let sets = Object.values(items.sets).filter((s) => s.rarity === items.rarities[ri].id && rIdx(s.minRank) <= ranki);
       const pref = sets.filter((s) => !classe || s.classes.indexOf(classe) >= 0);
-      if (pref.length && (!classe || G.rng.chance(0.7))) sets = pref;
+      if (classe) sets = pref;
       if (sets.length) {
-        const s = G.rng.pick(sets); const pcs = s.pieces.filter((p) => !opts.slot || p.slot === opts.slot);
+        const s = G.rng.pick(sets); const pcs = s.pieces.filter((p) => (!opts.slot || p.slot === opts.slot) && classOk(p, classe));
         if (pcs.length) return G.rng.pick(pcs).id;
       }
     }
@@ -110,7 +110,8 @@ window.G = window.G || {};
     const slot = opts.slot || weightedPick(items.slots, (s) => s.weight).id;
     const tier = tierOfRank(rank);
     let c = Object.values(items.bases).filter((b) => !b.unique && !b.set && b.slot === slot && b.tier === tier);
-    if (slot === 'arme' && classe) { const m = c.filter((b) => classOk(b, classe)); if (m.length && G.rng.chance(0.75)) c = m; }
+    if (classe) c = c.filter((b) => classOk(b, classe));
+    if (!c.length) c = Object.values(items.bases).filter((b) => !b.unique && !b.set && b.slot === slot && classOk(b, classe));
     if (!c.length) c = Object.values(items.bases).filter((b) => !b.unique && !b.set && b.slot === slot);
     return G.rng.pick(c).id;
   }
@@ -151,7 +152,9 @@ window.G = window.G || {};
     return item;
   }
   function generate(level, rank, rarityHint, opts) {
-    opts = opts || {};
+    opts = Object.assign({}, opts || {});
+    // butin toujours adapté à la classe du héros (jamais d'arme réservée à une autre classe)
+    if (!opts.classe && opts.anyClass !== true) { try { const pr = G.game && G.game.profile; if (pr && pr.classe) opts.classe = pr.classe; } catch (_) { /* rien */ } }
     level = clamp(Math.round(level || 1), 1, 99);
     rank = rank || levelRank(level);
     const ri = pickRarity(rank, opts.luck || 0, rarityHint, opts);
