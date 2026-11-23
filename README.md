@@ -87,3 +87,7 @@ La coop locale utilise `BroadcastChannel`, qui ne marche qu'entre onglets de la 
 | `js/net/` | mode en ligne (Firebase, coop) — voir « Mode en ligne » |
 
 La sauvegarde est stockée dans le `localStorage` du navigateur.
+
+## Application Android (Google Play)
+
+Le jeu est une PWA installable (manifeste, service worker hors ligne, icônes). Pour le publier sur le Play Store, suis [PLAY-STORE.md](PLAY-STORE.md). La politique de confidentialité est dans [privacy.html](privacy.html).
