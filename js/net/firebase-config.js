@@ -14,13 +14,13 @@ window.G = window.G || {};
    database.rules.json, et des domaines autorisés dans Firebase Authentication.
    ===================================================================== */
 G.FIREBASE_CONFIG = {
-  enabled: false,                 // ← passe à true une fois les champs remplis
-  apiKey: '',                     // ex. 'AIza…'
-  authDomain: '',                 // ex. 'mon-projet.firebaseapp.com'
-  projectId: '',                  // ex. 'mon-projet'
-  databaseURL: '',                // ex. 'https://mon-projet-default-rtdb.europe-west1.firebasedatabase.app'
-  storageBucket: '',              // facultatif
-  messagingSenderId: '',          // facultatif
-  appId: '',                      // ex. '1:123456789:web:abcdef'
+  enabled: true,                  // ← passe à true une fois les champs remplis
+  apiKey: 'AIzaSyBXlbRO88RUrIyBbMWs5er18kzSPrD_i4Y',                     // ex. 'AIza…'
+  authDomain: 'donjon-arena.firebaseapp.com',                 // ex. 'mon-projet.firebaseapp.com'
+  projectId: 'donjon-arena',                  // ex. 'mon-projet'
+  databaseURL: 'https://donjon-arena-default-rtdb.europe-west1.firebasedatabase.app',                // ex. 'https://mon-projet-default-rtdb.europe-west1.firebasedatabase.app'
+  storageBucket: 'donjon-arena.firebasestorage.app',              // facultatif
+  messagingSenderId: '250736793345',          // facultatif
+  appId: '1:250736793345:web:ec492aa1679253a358ad00',                      // ex. '1:123456789:web:abcdef'
   sdkVersion: '10.12.2',          // version du SDK « compat » chargée depuis gstatic.com
 };
