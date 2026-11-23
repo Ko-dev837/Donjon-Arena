@@ -1635,4 +1635,142 @@ window.G = window.G || {};
     { id: 'tempete', name: 'Tempête', desc: 'Foudre +15 %, +2 rebonds partout, la Chaîne étourdit 0,4 s. Débloque Sphère d\'orage.', unlockLevel: 15, flags: ['storm'], skillId: 'elementaliste_sphere', stats(s) { mulD(s, 'foudre', 1.15); return s; }, mods: {} },
     { id: 'cryomancien', name: 'Cryomancien', desc: 'Glace +15 %, gel +0,5 s, éclats +20 % en zone. Débloque Mur de glace.', unlockLevel: 15, flags: ['cryo'], skillId: 'elementaliste_mur_glace', stats(s) { mulD(s, 'glace', 1.15); add(s, 'freezeDur', 0.5); return s; }, mods: {} },
   ];
+
+  // =====================================================================
+  // PHRASES SIMPLES (menu des compétences) — une phrase courte (≤ 80 caractères), sans chiffres, pour comprendre d'un coup d'œil.
+  // Le texte technique (desc) reste affiché dans le bloc « Détails » de la fiche. Chaque entrée devient le champ `simple`
+  // de la compétence / spécialisation / passif de classe. Le Nécromancien (js/sys/necro.js, chargé après) est lu via G.SKILL_SIMPLE.
+  // =====================================================================
+  const SIMPLE = G.SKILL_SIMPLE = G.SKILL_SIMPLE || {};
+  SIMPLE.skills = Object.assign(SIMPLE.skills || {}, {
+    // Guerrier
+    guerrier_frappe: 'Trois coups d\'épée devant toi ; le dernier repousse l\'ennemi.',
+    guerrier_charge: 'Tu fonces droit devant et tu assommes l\'ennemi que tu percutes.',
+    guerrier_fracas: 'Tu frappes le sol devant toi, encore plus fort sur les ennemis assommés.',
+    guerrier_colere_titan: 'Tu deviens un Titan géant. Plus tu as de Rage, plus tu es fort.',
+    guerrier_cri: 'Un grand cri qui ralentit les ennemis proches et te rend plus solide.',
+    guerrier_cuirasse: 'Tu es plus résistant, encore plus quand ta Rage est haute.',
+    guerrier_hache: 'Tu lances une hache qui revient vers toi comme un boomerang.',
+    guerrier_tourbillon: 'Tu tournes sur toi-même et tu frappes tout ce qui t\'entoure.',
+    guerrier_indomptable: 'Un coup qui devait te tuer te laisse en vie, de temps en temps.',
+    guerrier_bastion: 'Tu plantes ton drapeau : tu prends moins de dégâts et tu en renvoies.',
+    guerrier_frenesie: 'Tu perds un peu de vie pour frapper beaucoup plus fort et plus vite.',
+    // Mage
+    mage_trait_arcanique: 'Une petite boule magique lancée de loin, qui te rend un peu de mana.',
+    mage_orbe_braise: 'Une boule de feu qui explose et fait brûler les ennemis.',
+    mage_rayon: 'Un rayon magique continu, plus fort sur les ennemis qui brûlent.',
+    mage_cataclysme: 'Un énorme tourbillon de feu qui aspire les ennemis puis explose.',
+    mage_pas_arcanique: 'Tu te téléportes plus loin et tu laisses une rune qui explose.',
+    mage_meteore: 'Un météore tombe du ciel et écrase tous les ennemis de la zone.',
+    mage_maitrise_flux: 'Tu peux enchaîner plus d\'Échos et tes sorts reviennent plus vite.',
+    mage_egide: 'Pendant un moment, ton mana encaisse les coups à la place de ta vie.',
+    mage_surcharge: 'Tes sorts sont plus forts quand ton mana est presque plein.',
+    mage_brasier: 'Un champ de flammes au sol qui brûle tous ceux qui marchent dedans.',
+    mage_doublon: 'Pendant un moment, chacun de tes sorts se relance une deuxième fois.',
+    // Voleur
+    voleur_lancer: 'Tu lances un couteau qui reste planté dans l\'ennemi.',
+    voleur_eventail: 'Tu lances plusieurs couteaux d\'un coup, en éventail.',
+    voleur_rappel: 'Tes couteaux plantés reviennent vers toi et blessent en revenant.',
+    voleur_mille_couteaux: 'Tu lances des couteaux tout autour de toi pendant quelques secondes.',
+    voleur_glissade: 'Une roulade pour esquiver ; ton prochain couteau fait plus mal.',
+    voleur_fumigene: 'Un nuage de fumée qui ralentit les ennemis et te cache dedans.',
+    voleur_doigts_agiles: 'Tu gagnes plus d\'or et tes couteaux reviennent plus vite.',
+    voleur_grappin: 'Un crochet qui te tire vers un ennemi et l\'assomme un instant.',
+    voleur_maitre_voleur: 'Tes couteaux plantés font plus mal ; un ennemi bien piqué explose.',
+    voleur_valse: 'Des lames fantômes tournent autour de toi et coupent les ennemis.',
+    voleur_pillage: 'Tu marques un ennemi : s\'il meurt, il lâche beaucoup plus d\'or.',
+    // Assassin
+    assassin_entaille: 'Trois coups de dague rapides ; dans le dos, ils montent ton Combo.',
+    assassin_pas_ombre: 'Tu apparais dans le dos de l\'ennemi le plus proche et tu frappes.',
+    assassin_execution: 'Un coup final qui dépense ton Combo, énorme sur un ennemi presque mort.',
+    assassin_danse_ombres: 'Tu sautes d\'ennemi en ennemi en frappant, sans pouvoir être touché.',
+    assassin_sentence: 'Tu choisis une cible : elle prend plus de dégâts de ta part.',
+    assassin_voile: 'Tu deviens presque invisible ; ta prochaine attaque fait très mal.',
+    assassin_instinct: 'Tes coups critiques arrivent plus souvent et font plus mal.',
+    assassin_leurre: 'Un faux toi attire les ennemis, puis il explose.',
+    assassin_faucheur: 'Achever les ennemis devient plus facile et te rend du mana.',
+    assassin_double: 'Une copie de toi apparaît et se bat à tes côtés un moment.',
+    assassin_lames_venin: 'Tes coups empoisonnent ; ton Exécution fait exploser le poison.',
+    // Archer
+    archer_tir: 'Garde le bouton appuyé pour tirer une flèche plus forte.',
+    archer_piege: 'Tu poses un piège qui blesse et ralentit l\'ennemi qui marche dessus.',
+    archer_pluie: 'Des flèches tombent du ciel sur une zone.',
+    archer_etoile_filante: 'Une flèche géante qui traverse tous les ennemis en ligne droite.',
+    archer_saut_arriere: 'Tu sautes en arrière et tu tires une flèche en même temps.',
+    archer_tir_choc: 'Une flèche tirée de près qui repousse les ennemis loin de toi.',
+    archer_oeil_aigle: 'Tu tires plus loin et tes coups critiques arrivent plus souvent.',
+    archer_carreau: 'Une flèche qui explose et met le feu aux ennemis autour.',
+    archer_maitre_chasseur: 'Tes pièges font plus mal et ta Pluie de flèches revient plus vite.',
+    archer_tir_precis: 'Tu vises une seconde, puis tu tires une flèche très puissante.',
+    archer_faucon: 'Un faucon vole avec toi et attaque les ennemis proches.',
+    // Paladin
+    paladin_masse: 'Trois coups de masse bénie qui remplissent ta Foi.',
+    paladin_bouclier: 'Un bouclier de lumière te protège, puis explose autour de toi.',
+    paladin_marteau: 'Tu lances un marteau sacré ; frapper les ennemis touchés te soigne.',
+    paladin_verdict: 'Une colonne de lumière qui frappe fort autour de toi et te soigne.',
+    paladin_terre_sacree: 'Une zone sacrée au sol qui blesse les ennemis et te soigne.',
+    paladin_charge_radieuse: 'Tu fonces sur les ennemis et tu les repousses.',
+    paladin_egide: 'Tu es plus résistant et ton bouclier encaisse plus de coups.',
+    paladin_imposition: 'Un gros soin qui enlève aussi les mauvais effets sur toi.',
+    paladin_sursaut: 'Quand ta vie est très basse, tu reçois un bouclier et un soin.',
+    paladin_phalange: 'Un mur de lumière devant toi bloque les tirs ennemis.',
+    paladin_chatiment_divin: 'Des éclairs sacrés tombent sur les ennemis proches et les assomment.',
+    // Élémentaliste
+    elementaliste_arc: 'Tu tires de la foudre, puis de la glace, chacune à son tour.',
+    elementaliste_chaine: 'Un éclair qui saute d\'ennemi en ennemi.',
+    elementaliste_nova: 'Une onde de glace autour de toi qui gèle les ennemis proches.',
+    elementaliste_tempete: 'Une grosse tempête de foudre et de neige sur toute une zone.',
+    elementaliste_fusion: 'Tu mélanges glace et foudre pour une grosse explosion autour de toi.',
+    elementaliste_lance: 'Garde appuyé pour lancer une lance de glace qui traverse les ennemis.',
+    elementaliste_resonance: 'Tu peux garder plus de charges de glace et de foudre.',
+    elementaliste_orage: 'Plusieurs éclairs tombent du ciel sur une zone.',
+    elementaliste_zenith: 'Avec plein de glace et de foudre, tes sorts deviennent gratuits un moment.',
+    elementaliste_sphere: 'Une boule d\'orage te suit et foudroie les ennemis proches.',
+    elementaliste_mur_glace: 'Un mur de glace qui bloque les tirs et ralentit les ennemis.',
+    // Nécromancien (compétences définies dans js/sys/necro.js)
+    necro_basic: 'Tu lances une âme sur l\'ennemi ; chaque touche te rend du mana.',
+    necro_invoke: 'Tu appelles tes serviteurs d\'ombre pour qu\'ils se battent avec toi.',
+    necro_extract: 'Tu essaies de prendre l\'âme d\'un ennemi mort pour en faire un serviteur.',
+    necro_mark: 'Tu maudis un ennemi : il prend plus de dégâts et tes serviteurs l\'attaquent.',
+    necro_blast: 'Une explosion d\'ombre, plus forte près des corps et avec tes Âmes.',
+    necro_army: 'Des soldats fantômes sortent du sol pour t\'aider un moment.',
+    necro_souls: 'Tes serviteurs font plus mal et ont plus de vie.',
+    necro_command: 'Tu peux avoir plus de serviteurs et voler les âmes plus facilement.',
+    necro_sovereign: 'Tous tes serviteurs reviennent et deviennent plus forts un moment.',
+    necro_charnier: 'Tu fais exploser les corps proches et ils se relèvent en squelettes.',
+    necro_pacte: 'Tu dépenses tes Âmes pour rendre tes serviteurs plus forts.',
+  });
+  SIMPLE.specs = Object.assign(SIMPLE.specs || {}, {
+    berserker: 'Tu frappes plus fort et tu te soignes en tapant, mais tu es moins protégé.',
+    gardien: 'Tu deviens un mur : tu prends beaucoup moins de dégâts.',
+    pyromancien: 'Ton feu fait plus mal et la brûlure passe d\'un ennemi à l\'autre.',
+    archimage: 'Tes sorts reviennent plus vite et tu as plus de mana.',
+    lame_fantome: 'Tu as plus de couteaux et tu en lances deux à la fois.',
+    larron: 'Tu gagnes plus d\'or et tes couteaux empoisonnent.',
+    ombre: 'Tu es plus dur à toucher et ton Pas de l\'ombre revient plus vite.',
+    venimeux: 'Ton poison fait plus mal et tes coups de dague empoisonnent.',
+    tireur_elite: 'Tes coups critiques font plus mal et ton tir chargé traverse tout.',
+    traqueur: 'Tu cours plus vite et tu poses des pièges plus souvent.',
+    protecteur: 'Tu es plus solide et tes boucliers sont plus gros.',
+    croise: 'Ta lumière sacrée fait plus mal et brûle les ennemis.',
+    tempete: 'Ta foudre fait plus mal et saute sur plus d\'ennemis.',
+    cryomancien: 'Ta glace fait plus mal et gèle plus longtemps.',
+    necro_legion: 'Tu as un serviteur de plus, mais chacun est un peu plus faible.',
+    necro_elite: 'Tu as un serviteur de moins, mais chacun est bien plus fort.',
+  });
+  // classe : desc = qui tu es ; resource = ta jauge spéciale ; passive = le passif de classe (toujours actif)
+  SIMPLE.classes = Object.assign(SIMPLE.classes || {}, {
+    Guerrier: { desc: 'Un combattant au corps à corps qui encaisse et frappe fort.', resource: 'Se remplit quand tu frappes ou quand on te frappe ; ton ultime la dépense.', passive: 'Tu prends un peu moins de dégâts, tout le temps.' },
+    Mage: { desc: 'Un magicien qui fait très mal de loin, mais qui est fragile.', resource: 'Tes sorts coûtent du mana. Enchaîner des sorts différents donne des Échos.', passive: 'Ton mana revient plus vite.' },
+    Voleur: { desc: 'Un voleur rapide qui lance des couteaux et les fait revenir.', resource: 'Tes couteaux en réserve. Ils reviennent tout seuls avec le temps.', passive: 'Tu esquives plus souvent et tes couteaux font parfois tomber de l\'or.' },
+    Assassin: { desc: 'Un tueur rapide qui frappe dans le dos, mais qui est très fragile.', resource: 'Monte quand tu frappes, surtout dans le dos. L\'Exécution le dépense.', passive: 'Tu fais beaucoup plus mal quand tu frappes dans le dos.' },
+    Archer: { desc: 'Un archer qui tire de loin et pose des pièges.', resource: 'Monte quand tes flèches touchent. Pleine, ta flèche fait un coup critique.', passive: 'Plus l\'ennemi est loin, plus ta flèche fait mal.' },
+    Paladin: { desc: 'Un chevalier très solide qui protège et se soigne.', resource: 'Monte quand tu frappes ou prends des coups. Les sorts ★ la dépensent.', passive: 'Tu regagnes de la vie au repos et en frappant avec la lumière.' },
+    Elementaliste: { desc: 'Un mage qui gèle les ennemis avec la glace puis les brise avec la foudre.', resource: 'Chaque sort de glace ou de foudre te donne une charge. Fusion les dépense.', passive: 'Tes sorts de glace rendent le prochain sort de foudre plus fort.' },
+    Necromancien: { desc: 'Il ne se bat jamais seul : il lève une armée d\'ombres.', resource: 'Tu gagnes une Âme à chaque ennemi tué. Certains sorts les dépensent.', passive: 'Tes serviteurs sont plus forts et chaque ennemi tué te rend du mana.' },
+  });
+  // champ `simple` posé sur chaque objet (compétences de ce fichier, spécialisations, passifs de classe)
+  Object.keys(SIMPLE.skills).forEach((id) => { if (G.SKILLS[id]) G.SKILLS[id].simple = SIMPLE.skills[id]; });
+  Object.keys(SP).forEach((c) => (SP[c] || []).forEach((s) => { if (SIMPLE.specs[s.id]) s.simple = SIMPLE.specs[s.id]; }));
+  Object.keys(CP).forEach((c) => { if (SIMPLE.classes[c]) CP[c].simple = SIMPLE.classes[c].passive; });
 })();

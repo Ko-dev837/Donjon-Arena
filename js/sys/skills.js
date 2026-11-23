@@ -1029,7 +1029,7 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
 .sk-rn{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font:700 14px/1.15 var(--k-fd);letter-spacing:.02em}
 .sk-tag{display:inline-block;padding:1px 6px;border-radius:8px;border:1px solid var(--k-line2);font:700 9.5px/1.4 var(--k-fd);letter-spacing:.07em;text-transform:uppercase;color:var(--k-tx2)}
 .sk-tag.e{color:var(--e);border-color:color-mix(in srgb,var(--e) 55%,transparent)}.sk-tag.g{color:var(--k-gold);border-color:rgba(255,201,74,.55)}.sk-tag.v{color:#d9c8ff;border-color:var(--k-vio)}.sk-tag.ok{color:var(--k-ok);border-color:rgba(57,224,140,.5)}
-.sk-rd{margin-top:3px;font-size:12px;line-height:1.35;color:var(--k-tx2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sk-rd{margin-top:3px;font-size:12.5px;line-height:1.35;color:var(--k-tx2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .sk-rs{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:54px;text-align:right}
 .sk-pips{display:flex;gap:2px}.sk-pip{width:8px;height:4px;border-radius:2px;background:var(--k-bg3);border:1px solid var(--k-line)}.sk-pip.on{background:var(--e);border-color:var(--e);box-shadow:0 0 5px var(--e)}
 .sk-lvt{font:700 10.5px/1 var(--k-fd);letter-spacing:.05em;color:var(--k-tx2)}
@@ -1123,6 +1123,22 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
 .sk-ff{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-bottom:1px solid var(--k-line);background:rgba(4,8,20,.35)}
 .sk-ffr{display:flex;flex-wrap:wrap;gap:8px}.sk-ffr .ds-btn{flex:1 1 130px}
 .sk-why{font-size:12px;color:var(--k-tx3);text-align:center}
+.sk-rlk{display:flex;align-items:center;gap:5px;margin-top:5px;font:700 11.5px/1.2 var(--k-fd);letter-spacing:.02em;color:var(--k-gold)}.sk-rlk svg{width:12px;height:12px;flex:none}
+.sk-fsum{display:flex;flex-direction:column;gap:10px;padding:14px 14px 12px;border-bottom:1px solid var(--k-line)}
+.sk-fsimple{margin:0;font:600 16px/1.45 var(--k-fb);color:var(--k-tx)}
+.sk-ficons{display:flex;flex-wrap:wrap;gap:6px}
+.sk-fi{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:rgba(130,200,255,.06);border:1px solid var(--k-line);color:var(--k-tx2)}
+.sk-fi svg{width:16px;height:16px;flex:none;opacity:.9}.sk-fi b{font:700 13.5px/1 var(--k-fd);color:var(--k-tx)}.sk-fi.mp,.sk-fi.mp b{color:var(--k-mp)}
+.sk-det{border:1px solid var(--k-line);border-radius:var(--ds-r-md,10px);background:rgba(4,8,20,.35)}
+.sk-det>summary{display:flex;align-items:center;gap:7px;min-height:40px;padding:8px 12px;cursor:pointer;list-style:none;font:700 11.5px/1 var(--k-fd);letter-spacing:.12em;text-transform:uppercase;color:var(--k-tx2);-webkit-tap-highlight-color:transparent}
+.sk-det>summary::-webkit-details-marker{display:none}
+.sk-det>summary::after{content:'';margin-left:auto;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);transition:transform .2s}
+.sk-det[open]>summary::after{transform:rotate(-135deg)}
+.sk-det>summary:hover{color:var(--k-tx)}.sk-det>summary:focus-visible{outline:2px solid var(--k-acc);outline-offset:2px}
+.sk-det-h{font:500 11px var(--k-fb);letter-spacing:0;text-transform:none;color:var(--k-tx3)}
+.sk-det-b{display:flex;flex-direction:column;gap:12px;padding:4px 12px 12px}
+.sk-cdet{position:relative;margin-top:10px}.sk-cdet .sk-det-b p{margin:0}
+.sk-sdet{margin-top:6px;background:transparent}.sk-sdet>summary{min-height:32px;padding:6px 10px;font-size:10.5px}
 .sk-burst{position:absolute;inset:0;z-index:5;pointer-events:none;display:grid;place-items:center;overflow:hidden}
 .sk-b-flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 38%,rgba(255,236,170,.85),rgba(255,201,74,.25) 40%,transparent 70%);opacity:0;animation:skFlash .9s ease-out both;animation-delay:var(--el,0s)}
 .sk-b-ring{position:absolute;left:50%;top:44px;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:3px solid var(--k-gold);opacity:0;animation:skBurstRing 1s ease-out both;animation-delay:var(--el,0s)}.sk-b-ring.r2{border-color:var(--e);animation-delay:calc(var(--el,0s) + .15s)}
@@ -1155,6 +1171,19 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
 
   const SKUI = { sel: null, src: 'list', pick: null, confirm: null, flash: null, lv: null, seen: null, newIds: new Set() };
   function descOf(d, L) { try { return d.desc(L); } catch (_) { return ''; } }
+  // phrase simple (js/data/skills.js → champ `simple` / G.SKILL_SIMPLE) ; à défaut, la 1re phrase du texte technique
+  const SIMPLE = () => G.SKILL_SIMPLE || {};
+  function simpleOf(d) {
+    if (!d) return '';
+    const s = d.simple || (SIMPLE().skills || {})[d.id];
+    if (s) return s;
+    let t = ''; try { t = String(d.baseDesc ? d.baseDesc(1) : d.desc(1)); } catch (_) {}
+    t = t.replace(/^(Passif|Spécialisation [^.]+)\s*[:.]\s*/, '');
+    const cut = t.split(/(?<=[.;:])\s/)[0];
+    return cut.length > 90 ? cut.slice(0, 87).replace(/\s+\S*$/, '') + '…' : cut;
+  }
+  function simpleSpec(s) { return (s && (s.simple || (SIMPLE().specs || {})[s.id])) || (s && s.desc) || ''; }
+  function simpleClass(classe, key) { const c = (SIMPLE().classes || {})[classe]; return (c && c[key]) || ''; }
   function costLine(d, L) {
     const o = {};
     o.mana = num(d.manaCost, 0);
@@ -1174,7 +1203,7 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
   const fmt2 = (n) => String(Math.round(n * 100) / 100).replace('.', ',');
   const SLOT_LABEL = { cast1: 'Attaque', cast2: 'Sort 2', cast3: 'Sort 3', super: 'Ultime' };
   const SLOT_KEY = { cast1: '1', cast2: '2', cast3: '3', super: 'X' };
-  const KIND_LABEL = { basic: 'Attaque de base', active: 'Active', ultimate: 'Ultime', passive: 'Passif' };
+  const KIND_LABEL = { basic: 'Attaque', active: 'Sort', ultimate: 'Ultime', passive: 'Passif' };
   const ELEM_NAME = { physique: 'Physique', feu: 'Feu', glace: 'Glace', foudre: 'Foudre', ombre: 'Ombre', sacre: 'Sacré', poison: 'Poison' };
   const ELEM_ICON = { physique: 'sword', feu: 'fire', glace: 'ice', foudre: 'lightning', ombre: 'shadow', sacre: 'holy', poison: 'poison' };
   const ELEM_COL = { physique: '#cfd8ea', feu: '#ff7a3d', glace: '#6fdcff', foudre: '#ffe45c', ombre: '#a67bff', sacre: '#ffe9a0', poison: '#7cdc5a' };
@@ -1313,16 +1342,6 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       return { L, why, heroLock, specLock, st };
     }
     const powerOf = (d, L) => 1 + num(d.lvlK, 0.22) * (Math.max(1, L) - 1);
-    function chipsOf(d, L) {
-      const c = costLine(d, Math.max(1, L)), o = [];
-      if (d.kind === 'passive') return '';
-      o.push(d.manaCost ? '<span class="mp">' + ic('mana', 11) + d.manaCost + ' mana</span>' : '<span class="mp">' + ic('mana', 11) + '0</span>');
-      if (c.cd != null && c.cd > 0) o.push('<span class="cd">' + ic('timer', 11) + fmt(c.cd) + ' s</span>');
-      else if (d.combo) o.push('<span class="cd">' + ic('swords', 11) + d.combo.steps + ' coups</span>');
-      if (d.range > 0) o.push('<span>' + ic('target', 11) + fmt(d.range) + ' m</span>');
-      else if (d.radius > 0) o.push('<span>' + ic('target', 11) + 'r ' + fmt(d.radius) + ' m</span>');
-      return '<div class="sk-chips">' + o.join('') + '</div>';
-    }
     const eqSlotOf = (id) => SLOTS.find((s) => p.skills.equipped[s] === id) || null;
     const flashOf = (id) => (ui.flash && ui.flash.id === id && Date.now() - ui.flash.t < 1400) ? ui.flash : null;
 
@@ -1331,16 +1350,16 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       o = o || {};
       const s = stateOf(d), fl = flashOf(d.id), eq = eqSlotOf(d.id);
       const pips = Array.from({ length: d.maxLevel }, (_, i) => '<span class="sk-pip' + (i < s.L ? ' on' : '') + '"></span>').join('');
-      let status;
-      if (s.st === 'lock') status = '<span class="sk-lk">' + ic('lock', 12) + (s.heroLock ? 'Niv. ' + d.unlockLevel : 'Spécialisation') + '</span>';
+      // ligne = icône, nom, type, phrase simple, niveau + emplacement (les chiffres sont dans la fiche)
+      let status = '', lockLine = '';
+      if (s.st === 'lock') lockLine = '<div class="sk-rlk">' + ic('lock', 12) + (s.heroLock ? 'Se débloque au niveau ' + d.unlockLevel : 'Avec la spécialisation') + '</div>';
       else if (s.st === 'avail') status = '<span class="sk-av">À apprendre</span>';
       else status = '<span class="sk-pips">' + pips + '</span><span class="sk-lvt">Niv. ' + s.L + '/' + d.maxLevel + '</span>';
       if (eq && eq !== 'cast1') status += '<span class="sk-tag ok">' + SLOT_LABEL[eq] + '</span>';
-      const desc = baseOf(d, Math.max(1, s.L));
       return '<div class="sk-row st-' + s.st + (d.kind === 'ultimate' ? ' is-ult' : '') + (ui.sel === d.id ? ' is-sel' : '') + (ui.newIds.has(d.id) ? ' is-new' : '') + (fl ? ' is-pop' : '') + '" data-id="' + d.id + '" style="--e:' + eCol(d) + (fl ? ';--el:-' + ((Date.now() - fl.t) / 1000).toFixed(2) + 's' : '') + '" role="button" tabindex="0" aria-label="' + esc(d.name) + '">' +
         hexIcon(d, 48, s.st === 'lock' ? { lock: true } : { badge: s.L || '' }) +
-        '<div class="sk-rt"><div class="sk-rn">' + esc(d.name) + '<span class="sk-tag">' + KIND_LABEL[d.kind] + '</span></div>' + (d.kind !== 'passive' && s.st !== 'lock' ? chipsOf(d, s.L) : '') +
-        '<div class="sk-rd">' + esc(desc) + '</div></div><div class="sk-rs">' + status + '</div></div>' +
+        '<div class="sk-rt"><div class="sk-rn">' + esc(d.name) + '<span class="sk-tag">' + KIND_LABEL[d.kind] + '</span></div>' +
+        '<div class="sk-rd">' + esc(simpleOf(d)) + '</div>' + lockLine + '</div>' + (status ? '<div class="sk-rs">' + status + '</div>' : '') + '</div>' +
         (o.noFiche ? '' : ui.sel === d.id && ui.src === 'list' ? ficheHtml(d, 'inline') : '');
     }
 
@@ -1357,22 +1376,33 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       h += '<div class="sk-fh">' + hexIcon(d, 60, s.st === 'lock' ? { lock: true } : { badge: L ? L + '/' + d.maxLevel : '' }) +
         '<div style="min-width:0"><div class="sk-fn">' + esc(d.name) + '</div><div class="sk-fbd"><span class="sk-tag' + (d.kind === 'ultimate' ? ' g' : '') + '">' + KIND_LABEL[d.kind] + '</span>' +
         (d.element ? '<span class="sk-tag e">' + esc(ELEM_NAME[d.element] || d.element) + '</span>' : '') + (d.spec ? '<span class="sk-tag v">Spécialisation</span>' : '') + (max ? '<span class="sk-tag g">Max</span>' : '') + (eq && eq !== 'cast1' ? '<span class="sk-tag ok">' + SLOT_LABEL[eq] + '</span>' : '') + '</div></div>' +
-        '<button type="button" class="sk-fx" data-act="close" aria-label="Fermer">' + ic('close', 16, '×') + '</button></div>@@ACT@@<div class="sk-fb">';
-      // condition de déblocage lisible
+        '<button type="button" class="sk-fx" data-act="close" aria-label="Fermer">' + ic('close', 16, '×') + '</button></div>';
+      // 1) la phrase simple, en gros ; 2) verrou lisible OU coût / recharge / portée en icônes
+      h += '<div class="sk-fsum"><p class="sk-fsimple">' + esc(simpleOf(d)) + '</p>';
       if (s.st === 'lock') {
-        h += '<div class="sk-lockban">' + ic('lock', 22) + '<div>' + (s.specLock && !s.heroLock ? 'Réservée à la spécialisation <b>' + esc(((specList(p.classe).find((x) => x.id === d.spec)) || {}).name || d.spec) + '</b>.' : 'Se débloque au <b>niveau ' + d.unlockLevel + '</b>' + (heroLv() < d.unlockLevel ? ' — il te manque <b>' + (d.unlockLevel - heroLv()) + ' niveau' + (d.unlockLevel - heroLv() > 1 ? 'x' : '') + '</b>.' : '.') + (s.specLock ? ' Spécialisation requise.' : '')) + '</div></div>';
-      }
-      // chiffres clés
+        h += '<div class="sk-lockban">' + ic('lock', 22) + '<div>' + (s.specLock && !s.heroLock ? 'Réservée à la spécialisation <b>' + esc(((specList(p.classe).find((x) => x.id === d.spec)) || {}).name || d.spec) + '</b>.' : 'Se débloque au <b>niveau ' + d.unlockLevel + '</b>' + (heroLv() < d.unlockLevel ? ' — encore <b>' + (d.unlockLevel - heroLv()) + ' niveau' + (d.unlockLevel - heroLv() > 1 ? 'x' : '') + '</b>.' : '.') + (s.specLock ? ' Spécialisation requise.' : '')) + '</div></div>';
+      } else if (d.kind !== 'passive') {
+        const st = [], item = (icon, val, label, cls) => '<span class="sk-fi' + (cls ? ' ' + cls : '') + '" title="' + label + '" aria-label="' + label + ' : ' + val + '">' + ic(icon, 16) + '<b>' + val + '</b></span>';
+        st.push(item('mana', d.manaCost ? String(d.manaCost) : '0', 'Mana', 'mp'));
+        if (c.cd != null && c.cd > 0) st.push(item('timer', fmt(c.cd) + ' s', d.kind === 'basic' ? 'Cadence' : 'Recharge'));
+        else if (d.combo) st.push(item('swords', d.combo.steps + ' coups', 'Combo'));
+        if (d.range > 0) st.push(item('target', fmt(d.range) + ' m', 'Portée'));
+        else if (d.radius > 0) st.push(item('target', fmt(d.radius) + ' m', 'Zone'));
+        h += '<div class="sk-ficons">' + st.join('') + '</div>';
+      } else h += '<div class="sk-ficons"><span class="sk-fi">' + ic('shield', 16) + '<b>Toujours actif</b></span></div>';
+      h += '</div>@@ACT@@<div class="sk-fb">';
+      // variante à choisir (niveau max) : reste visible hors des détails
+      const varOut = d.variants && (d.variants.A || d.variants.B) && L >= d.maxLevel;
+      if (varOut) h += varHtml();
+      // 3) tout le texte technique, replié dans « Détails »
+      const detStart = h.length;
+      h += '<details class="sk-det"' + (ui.det ? ' open' : '') + '><summary>' + ic('info', 14) + 'Détails' + '<span class="sk-det-h">chiffres, niveaux, synergies</span></summary><div class="sk-det-b">';
       if (d.kind !== 'passive') {
         const tiles = [];
-        tiles.push('<div class="sk-tile mp"><small>' + ic('mana', 11) + 'Coût</small><b>' + (d.manaCost ? d.manaCost + ' mana' : 'Gratuit') + '</b></div>');
-        if (c.cd != null && c.cd > 0) tiles.push('<div class="sk-tile"><small>' + ic('timer', 11) + (d.kind === 'basic' ? 'Cadence' : 'Recharge') + '</small><b>' + fmt(c.cd) + ' s</b></div>');
-        else if (d.combo) tiles.push('<div class="sk-tile"><small>' + ic('swords', 11) + 'Combo</small><b>' + d.combo.steps + ' coups</b></div>');
-        if (d.range > 0) tiles.push('<div class="sk-tile"><small>' + ic('target', 11) + 'Portée</small><b>' + fmt(d.range) + ' m</b></div>');
-        if (d.radius > 0) tiles.push('<div class="sk-tile"><small>' + ic('target2', 11) + 'Zone</small><b>r ' + fmt(d.radius) + ' m</b></div>');
+        if (d.radius > 0 && d.range > 0) tiles.push('<div class="sk-tile"><small>' + ic('target2', 11) + 'Zone</small><b>r ' + fmt(d.radius) + ' m</b></div>');
         if (d.charge) tiles.push('<div class="sk-tile"><small>' + ic('hand', 11) + 'Charge</small><b>Maintenir</b></div>');
-        h += '<div class="sk-ftiles">' + tiles.join('') + '</div>';
-      } else h += '<div class="sk-ftiles"><div class="sk-tile"><small>' + ic('shield', 11) + 'Type</small><b>Toujours actif</b></div></div>';
+        if (tiles.length) h += '<div class="sk-ftiles">' + tiles.join('') + '</div>';
+      }
       // effet : niveau actuel → suivant
       const cur = baseOf(d, shown), curNums = numsOf(cur);
       if (!max && L > 0) {
@@ -1390,11 +1420,12 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
         h += '<div class="sk-fs"><div class="sk-ft">Améliorations</div><div class="sk-ups">' + d.upgrades.map((u) => '<div class="sk-up-i ' + (L >= u.level ? 'done' : nextUp === u ? 'next' : '') + '"><span class="pl">' + (L >= u.level ? ic('check', 12) : 'Niv. ' + u.level) + '</span><span>' + rich(u.text, d) + '</span></div>').join('') + '</div></div>';
       }
       // variantes (choix exclusif au niveau max)
-      if (d.variants && (d.variants.A || d.variants.B)) {
+      function varHtml() {
         const cv = variantOf(p, d.id), can = L >= d.maxLevel;
-        h += '<div class="sk-fs"><div class="sk-ft">Variante · niveau ' + d.maxLevel + '</div><div class="sk-vars">' + ['A', 'B'].filter((v) => d.variants[v]).map((v) => '<button type="button" class="sk-var' + (cv === v ? ' on' : '') + '" data-var="' + v + '"' + (can ? '' : ' disabled') + '><b>' + (cv === v ? ic('check', 13) : '') + esc(d.variants[v].name) + '</b><span>' + rich(d.variants[v].text, d) + '</span></button>').join('') + '</div>' +
+        return '<div class="sk-fs"><div class="sk-ft">Variante · niveau ' + d.maxLevel + '</div><div class="sk-vars">' + ['A', 'B'].filter((v) => d.variants[v]).map((v) => '<button type="button" class="sk-var' + (cv === v ? ' on' : '') + '" data-var="' + v + '"' + (can ? '' : ' disabled') + '><b>' + (cv === v ? ic('check', 13) : '') + esc(d.variants[v].name) + '</b><span>' + rich(d.variants[v].text, d) + '</span></button>').join('') + '</div>' +
           '<div class="sk-vnote">' + (can ? (cv ? 'Touche la variante choisie pour la retirer.' : 'Choisis une variante : le choix est libre et modifiable.') : 'Se choisit une fois la compétence au niveau ' + d.maxLevel + '.') + '</div></div>';
       }
+      if (d.variants && (d.variants.A || d.variants.B) && !varOut) h += varHtml();
       // synergies
       const sy = synergies(d), kws = keywordsOf(d);
       if (sy.uses.length || sy.usedBy.length || kws.length) {
@@ -1415,7 +1446,9 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
         rows.push([p.skills.points >= pointCost(d), pointCost(d) + ' point de compétence']);
         h += '<div class="sk-fs"><div class="sk-ft">Conditions</div><div class="sk-req">' + rows.map((r) => '<div class="' + (r[0] ? 'ok' : 'ko') + '">' + ic(r[0] ? 'check' : 'lock', 14, r[0] ? '✓' : '✕') + '<span>' + esc(r[1]) + '</span></div>').join('') + '</div></div>';
       }
-      h += '</div>';
+      h += '</div></details></div>';
+      // verrouillée par le niveau : nom, phrase simple et niveau requis, rien d'autre
+      if (s.heroLock) h = h.slice(0, detStart).replace(/<div class="sk-fb">$/, '');
       let ff = '';
       const ro = [];
       if (!max) ro.push(s.heroLock && !L ? btn('ds-btn--secondary', 'Niveau ' + d.unlockLevel + ' requis', 'disabled', ic('lock', 16)) : btn('ds-btn--primary', (L ? 'Améliorer' : 'Apprendre') + ' · ' + pointCost(d) + ' pt', 'data-act="learn"' + (s.why ? ' disabled' : ''), ic('arrow-up', 16)));
@@ -1445,12 +1478,20 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       const role = String(C.role || '').split(/\s[—–-]\s/);
       let h = '<section class="sk-class" style="--cc:' + ccol + '"><div class="sk-ctop"><span class="sk-cico"><span>' + esc(C.icon || '✨') + '</span></span><div class="sk-ct"><div class="sk-cname">' + esc(C.name || p.classe) + '</div><div class="sk-crole">' + esc(C.role || '') + '</div></div>' +
         '<div class="sk-points' + (pts > 0 ? ' has' : '') + '"><b>' + pts + '</b><small>point' + (pts > 1 ? 's' : '') + '<br>de compétence</small></div></div>';
-      if (C.desc) h += '<p class="sk-cdesc">' + esc(C.desc) + '</p>';
+      const sDesc = simpleClass(p.classe, 'desc'), sRes = simpleClass(p.classe, 'resource'), sPas = (classPassive && classPassive.simple) || simpleClass(p.classe, 'passive');
+      if (sDesc || C.desc) h += '<p class="sk-cdesc">' + esc(sDesc || C.desc) + '</p>';
       h += '<div class="sk-cgrid"><div class="sk-cbox sk-cres"><div class="sk-cbt">Ressource <b>' + esc((res && res.name) || (rc.name || 'Mana').replace(/\s*\(.*\)/, '')) + '</b></div>';
       if (res && G.UI && G.UI.resGauge) h += '<div class="rg-wrap">' + G.UI.resGauge(res) + '</div>';
-      h += '<div class="sk-ctxt">' + (rc.gain ? esc(rc.gain) : 'Aucune ressource secondaire : le mana suffit.') + '</div></div>';
-      if (classPassive) h += '<div class="sk-cbox"><div class="sk-cbt">Passif de classe <span class="sk-tag ok" style="margin-left:auto">Toujours actif</span></div><div class="sk-cpas-n">' + ic('star-fill', 14) + esc(classPassive.name) + '</div><div class="sk-ctxt">' + rich(classPassive.desc, null) + '</div></div>';
-      return h + '</div></section>';
+      h += '<div class="sk-ctxt">' + esc(sRes || rc.gain || 'Aucune ressource secondaire : le mana suffit.') + '</div></div>';
+      if (classPassive) h += '<div class="sk-cbox"><div class="sk-cbt">Passif de classe <span class="sk-tag ok" style="margin-left:auto">Toujours actif</span></div><div class="sk-cpas-n">' + ic('star-fill', 14) + esc(classPassive.name) + '</div><div class="sk-ctxt">' + esc(sPas || classPassive.desc) + '</div></div>';
+      h += '</div>';
+      // texte technique de la classe, replié
+      const det = [];
+      if (C.desc && sDesc) det.push('<p>' + esc(C.desc) + '</p>');
+      if (rc.gain && sRes) det.push('<p><b>' + esc((res && res.name) || rc.name || 'Ressource') + ' :</b> ' + rich(rc.gain, null) + '</p>');
+      if (classPassive && sPas) det.push('<p><b>' + esc(classPassive.name) + ' :</b> ' + rich(classPassive.desc, null) + '</p>');
+      if (det.length) h += '<details class="sk-det sk-cdet"' + (ui.cdet ? ' open' : '') + '><summary>' + ic('info', 14) + 'Détails<span class="sk-det-h">ressource et passif en chiffres</span></summary><div class="sk-det-b sk-ctxt">' + det.join('') + '</div></details>';
+      return h + '</section>';
     }
     function lvlBanner() {
       const lv = ui.lv; if (!lv || Date.now() - lv.t > 9000) return '';
@@ -1465,7 +1506,7 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       const locked = sl === 'super' && heroLv() < num(d && d.unlockLevel, 5);
       return '<button type="button" class="sk-ks' + (sl === 'super' ? ' is-ult' : '') + (ui.sel === id && ui.src === 'kit' ? ' is-sel' : '') + (ui.pick === sl ? ' is-pick' : '') + (drop ? ' is-drop' : '') + (locked ? ' is-locked' : '') + (fl ? ' is-pop' : '') + '" data-slot="' + sl + '" style="--e:' + eCol(d) + '">' +
         '<span class="sk-kh ' + (s ? 'st-' + s.st : '') + '">' + hexIcon(d, 46, locked ? { lock: true } : { badge: d ? Math.max(1, s.L) : '' }) + '</span><span class="sk-kst"><span class="sk-ksl">' + SLOT_LABEL[sl] + '<kbd>' + SLOT_KEY[sl] + '</kbd></span><span class="sk-ksn">' + esc(d ? d.name : 'Vide') + '</span>' +
-        (locked ? '<span class="sk-chips"><span style="color:var(--k-gold)">' + ic('lock', 11) + 'Niveau ' + d.unlockLevel + '</span></span>' : d ? chipsOf(d, s.L) : '') + '</span></button>';
+        (locked ? '<span class="sk-chips"><span style="color:var(--k-gold)">' + ic('lock', 11) + 'Niveau ' + d.unlockLevel + '</span></span>' : '') + '</span></button>';
     }
     function kitBlock() {
       let h = '<div class="sk-sect first">Kit actuel<small>touche un emplacement</small>' + btn('ds-btn--ghost ds-btn--sm', 'Réinitialiser', 'data-act="respec"' + (spentPoints(p) === 0 ? ' disabled' : ''), ic('refresh', 15)) + '</div>';
@@ -1513,7 +1554,8 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       }
       specs.forEach((s) => {
         const act = sp && sp.id === s.id, locked = lvl < s.unlockLevel, off = sp && !act, d = specSkills[s.id] || (s.skillId && byId[s.skillId]);
-        h += '<div class="sk-sc' + (act ? ' is-active' : '') + (off ? ' is-off' : '') + '"><div class="sk-sch">' + ic(act ? 'crown' : 'star', 20) + '<div class="sk-scn">' + esc(s.name) + '</div>' + (act ? '<span class="sk-tag g">Choisie</span>' : '') + '</div><div class="sk-scd">' + rich(s.desc, null) + '</div>';
+        h += '<div class="sk-sc' + (act ? ' is-active' : '') + (off ? ' is-off' : '') + '"><div class="sk-sch">' + ic(act ? 'crown' : 'star', 20) + '<div class="sk-scn">' + esc(s.name) + '</div>' + (act ? '<span class="sk-tag g">Choisie</span>' : '') + '</div><div class="sk-scd">' + esc(simpleSpec(s)) + '</div>' +
+          (s.desc && simpleSpec(s) !== s.desc ? '<details class="sk-det sk-sdet"><summary>' + ic('info', 14) + 'Détails</summary><div class="sk-det-b sk-scd">' + rich(s.desc, null) + '</div></details>' : '');
         if (d) h += rowHtml(d);
         h += '<div class="sk-sca">';
         if (act) h += btn('ds-btn--secondary ds-btn--sm', 'Changer · ' + rc + ' or', 'data-act="resetspec"' + (num(p.gold, 0) < rc ? ' disabled' : ''));
@@ -1528,13 +1570,13 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       const pas = unlocks.filter((u) => revealed(u.level)).map((u) => u.d).filter((d) => d.kind === 'passive');
       if (!classPassive && !pas.length) return '';
       let h = '<div class="sk-sect">Passifs<small>toujours actifs, sans emplacement</small></div><div class="sk-pas">';
-      if (classPassive) h += '<div class="sk-cbox"><div class="sk-cpas-n">' + ic('star-fill', 14) + esc(classPassive.name) + '<span class="sk-tag ok">Classe</span></div><div class="sk-ctxt">' + rich(classPassive.desc, null) + '</div></div>';
+      if (classPassive) h += '<div class="sk-cbox"><div class="sk-cpas-n">' + ic('star-fill', 14) + esc(classPassive.name) + '<span class="sk-tag ok">Classe</span></div><div class="sk-ctxt">' + esc(classPassive.simple || simpleClass(p.classe, 'passive') || classPassive.desc) + '</div></div>';
       if (pas.length) h += '<div class="sk-pchips">' + pas.map((d) => { const s = stateOf(d); return '<button type="button" class="sk-chip" data-goto="' + d.id + '" style="--e:' + eCol(d) + (s.st === 'lock' ? ';opacity:.7' : '') + '">' + (s.st === 'lock' ? ic('lock', 14) : skIcon(d, 14)) + esc(d.name) + '<small>' + (s.st === 'lock' ? 'niv. ' + d.unlockLevel : 'niv. ' + s.L + '/' + d.maxLevel) + '</small></button>'; }).join('') + '</div>';
       return h + '</div>';
     }
     function sideFiche() {
       const d = ui.sel && byId[ui.sel];
-      if (!d) return '<div class="sk-empty">' + ic('info', 28) + '<p>Sélectionne une compétence pour voir sa fiche détaillée : chiffres, améliorations, variantes et synergies.</p></div>';
+      if (!d) return '<div class="sk-empty">' + ic('info', 28) + '<p>Touche une compétence pour voir ce qu\'elle fait.</p></div>';
       return ficheHtml(d, 'side');
     }
 
@@ -1579,6 +1621,11 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
         const row = t.closest('.sk-row');
         if (row) { if (container.__skDragged) { container.__skDragged = false; return; } snd('click'); const id = row.getAttribute('data-id'); if (ui.sel === id && ui.src === 'list') { ui.sel = null; draw(); } else { select(id, 'list'); } }
       });
+      // blocs « Détails » : on se souvient s'ils sont ouverts d'un rendu à l'autre (apprendre / équiper redessine le panneau)
+      container.addEventListener('toggle', (ev) => {
+        const el = ev.target; if (!el || !el.classList || !el.classList.contains('sk-det')) return;
+        if (el.classList.contains('sk-cdet')) ui.cdet = el.open; else if (!el.classList.contains('sk-sdet')) ui.det = el.open;
+      }, true);
       container.addEventListener('keydown', (ev) => {
         const row = ev.target && ev.target.closest && ev.target.closest('.sk-row');
         if (row && (ev.key === 'Enter' || ev.key === ' ') && ev.target === row) { ev.preventDefault(); select(row.getAttribute('data-id'), 'list'); }
