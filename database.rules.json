@@ -1,0 +1,129 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "status": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['state'])",
+        "state": { ".validate": "newData.isString() && (newData.val() === 'online' || newData.val() === 'offline')" },
+        "name": { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "classe": { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "rank": { ".validate": "newData.isString() && newData.val().length <= 3" },
+        "niveau": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999" },
+        "inGame": { ".validate": "newData.isBoolean()" },
+        "last": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "invites": {
+      "$to": {
+        ".read": "auth != null && auth.uid === $to",
+        "$lobby": {
+          ".write": "auth != null && (auth.uid === $to || ((!data.exists() || data.child('from').val() === auth.uid) && root.child('lobbies').child($lobby).child('members').child(auth.uid).exists()))",
+          ".validate": "newData.hasChildren(['from', 'name', 'at']) && newData.child('from').val() === auth.uid",
+          "from": { ".validate": "newData.isString()" },
+          "name": { ".validate": "newData.isString() && newData.val().length <= 20" },
+          "at": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
+    "lobbies": {
+      "$lid": {
+        ".read": "auth != null && (data.child('members').child(auth.uid).exists() || root.child('invites').child(auth.uid).child($lid).exists())",
+        ".write": "auth != null && (data.child('members').child(auth.uid).exists() || (!data.exists() && newData.child('leader').val() === auth.uid && newData.child('members').child(auth.uid).exists()))",
+        ".validate": "$lid.length >= 6 && $lid.length <= 12",
+
+        "leader": { ".validate": "newData.isString() && newData.parent().child('members').child(newData.val()).exists()" },
+        "state": { ".validate": "newData.isString() && (newData.val() === 'open' || newData.val() === 'ingame')" },
+        "created": { ".validate": "newData.isNumber()" },
+        "portal": { ".validate": "newData.isString() && newData.val().length <= 20000 && root.child('lobbies').child($lid).child('leader').val() === auth.uid" },
+
+        "members": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && (data.exists() || root.child('invites').child(auth.uid).child($lid).exists())",
+            ".validate": "newData.hasChildren(['name', 'slot']) && ($uid === auth.uid || (data.exists() && newData.child('name').val() === data.child('name').val() && newData.child('slot').val() === data.child('slot').val() && root.child('lobbies').child($lid).child('leader').val() === auth.uid))",
+            "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" },
+            "slot": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3" },
+            "classe": { ".validate": "newData.isString() && newData.val().length <= 20" },
+            "rank": { ".validate": "newData.isString() && newData.val().length <= 3" },
+            "niveau": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999" },
+            "skin": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "ready": { ".validate": "newData.isBoolean()" },
+            "ok": { ".validate": "newData.isBoolean()" },
+            "reason": { ".validate": "newData.isString() && newData.val().length <= 120" },
+            "at": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "launch": {
+          ".validate": "newData.hasChildren(['n', 'host', 'portal', 'dungeon', 'at']) && root.child('lobbies').child($lid).child('leader').val() === auth.uid && newData.child('host').val() === auth.uid",
+          "n": { ".validate": "newData.isNumber()" },
+          "host": { ".validate": "newData.isString()" },
+          "portal": { ".validate": "newData.isString() && newData.val().length <= 20000" },
+          "dungeon": { ".validate": "newData.isString() && newData.val().length <= 400000" },
+          "seed": { ".validate": "newData.isNumber()" },
+          "at": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
+        },
+
+        "st": {
+          "$uid": {
+            ".validate": "$uid === auth.uid && newData.hasChildren(['x', 'z', 'pv', 'pvMax'])",
+            "x": { ".validate": "newData.isNumber()" },
+            "z": { ".validate": "newData.isNumber()" },
+            "ry": { ".validate": "newData.isNumber()" },
+            "mv": { ".validate": "newData.isNumber()" },
+            "at": { ".validate": "newData.isNumber()" },
+            "pv": { ".validate": "newData.isNumber()" },
+            "pvMax": { ".validate": "newData.isNumber()" },
+            "dead": { ".validate": "newData.isNumber()" },
+            "ri": { ".validate": "newData.isNumber()" },
+            "cs": { ".validate": "newData.isNumber()" },
+            "sl": { ".validate": "newData.isString() && newData.val().length <= 24" },
+            "t": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "snap": {
+          ".validate": "root.child('lobbies').child($lid).child('launch').child('host').val() === auth.uid && newData.hasChildren(['ri'])",
+          "ri": { ".validate": "newData.isNumber()" },
+          "rs": { ".validate": "newData.isString() && newData.val().length <= 16" },
+          "t": { ".validate": "newData.isNumber()" },
+          "en": { ".validate": true },
+          "$other": { ".validate": false }
+        },
+
+        "ev": {
+          ".indexOn": ["at"],
+          "$eid": {
+            ".validate": "newData.hasChildren(['f', 'k', 'at']) && newData.child('f').val() === auth.uid",
+            "f": { ".validate": "newData.isString()" },
+            "k": { ".validate": "newData.isString() && newData.val().length <= 8" },
+            "at": { ".validate": "newData.isNumber()" },
+            "to": { ".validate": "newData.isString() && newData.val().length <= 128" },
+            "id": { ".validate": "newData.isString() && newData.val().length <= 16" },
+            "d": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000" },
+            "el": { ".validate": "newData.isString() && newData.val().length <= 12" },
+            "c": { ".validate": "newData.isNumber()" },
+            "sl": { ".validate": "newData.isNumber()" },
+            "i": { ".validate": "newData.isNumber()" },
+            "v": { ".validate": "newData.isNumber()" },
+            "why": { ".validate": "newData.isString() && newData.val().length <= 16" },
+            "rd": { ".validate": "newData.isString() && newData.val().length <= 60000" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

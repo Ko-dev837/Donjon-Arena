@@ -253,6 +253,26 @@ window.G = window.G || {};
   let tmpColor = null, tmpVec = null;
   let slowmo = 0;            // temps réel restant de ralenti (esquive parfaite)
   let savingNow = false;
+  // --- Pont réseau (mode en ligne / coop, voir js/net/online.js) ----------------------------------
+  // role : null (solo, comportement historique inchangé) | 'host' (simule les ennemis) | 'guest' (ennemis = marionnettes)
+  // cb   : rappels fournis par G.Online : hurtRemote(proxy, dmg, o), guestDamage(e, dealt, el, crit), door(), down()
+  // remotes() : mandataires des autres joueurs { remote:true, uid, pos:{x,z}, r, dead, face, dir } (lus par l'IA de l'hôte)
+  const net = { role: null, cb: {}, seq: 0, aggro: null, remotes: () => [] };
+  const netCall = (k, ...a) => { const f = net.cb && net.cb[k]; if (typeof f === 'function') { try { return f(...a); } catch (e) { console.warn('[game] net ' + k, e); } } return undefined; };
+  /** Cible de l'IA de l'hôte : joueur vivant le plus proche (local ou distant) */
+  function netPickAggro(e) {
+    const p = run.player;
+    let best = p && !p.dead ? p : null, bd = best ? Math.hypot(p.pos.x - e.pos.x, p.pos.z - e.pos.z) : 1e9;
+    const list = net.remotes() || [];
+    for (let i = 0; i < list.length; i++) {
+      const q = list[i];
+      if (!q || q.dead || !q.pos) continue;
+      const d = Math.hypot(q.pos.x - e.pos.x, q.pos.z - e.pos.z);
+      if (d < bd) { bd = d; best = q; }
+    }
+    return best && best !== p ? best : null;
+  }
+  const tgtP = () => net.aggro || run.player;
 
   const SYSTEMS = ['Progress', 'Skills', 'Talents', 'Inventory', 'Necro', 'Portals', 'Cosmetics'];
   function ensureAll(p) { SYSTEMS.forEach(s => safe(G[s], 'ensureProfile', [p])); return p; }
@@ -543,7 +563,7 @@ window.G = window.G || {};
   // --- Pause --------------------------------------------------------
   function setPaused(b) {
     const v = !!b && !!run && screen === 'game';
-    if (G.core) G.core.paused = v;
+    if (G.core) G.core.paused = v && !net.role;       // coop : le menu s'affiche mais le monde partagé continue
     UI('setPaused', v);
   }
   function togglePause() {
@@ -963,6 +983,7 @@ window.G = window.G || {};
   function failRun(reason, msg) {
     const r = run;
     if (!r || r.ended || r.finished) return;
+    if (net.role === 'guest' && reason !== 'net') return;      // coop : seul l'hôte décide d'une défaite commune
     r.ended = 'defeat'; r.endReason = reason;
     if (r.player) { r.player.invuln = 99; if (r.player.aim) r.player.aim.visible = false; }
     banner('<b>' + msg + '</b>', 2);
@@ -1007,7 +1028,7 @@ window.G = window.G || {};
       profile.cleared[key] = { stars: stars.map((s, i) => !!(s || oldStars[i])), best: newBest ? Math.round(r.time * 10) / 10 : prev.best };
       if (d.v2 && d.id !== key) profile.cleared[d.id] = profile.cleared[key];
       profile.stats.dungeons = (profile.stats.dungeons || 0) + 1;
-    } else {
+    } else if (!r.netNoPenalty) {      // coop : pas de pénalité si l'hôte a disparu
       applyLossPenalty(r);
     }
     profile.stats.playTime = (profile.stats.playTime || 0) + r.time;
@@ -1213,7 +1234,7 @@ window.G = window.G || {};
       const rt = G.RoomTypes && G.RoomTypes.get && G.RoomTypes.get(type);
       if (rt) {
         r.roomKind = 'ext'; r.rt = rt;
-        try { if (typeof rt.start === 'function') rt.start(rtCtx(r)); } catch (e) { console.warn('[game] RoomType.start ' + type, e); }
+        try { if (typeof rt.start === 'function' && net.role !== 'guest') rt.start(rtCtx(r)); } catch (e) { console.warn('[game] RoomType.start ' + type, e); }
       } else if (rd.waves && rd.waves.length) r.roomKind = 'combat';
       else { r.roomKind = 'combat'; roomCleared(true); }
     }
@@ -1259,6 +1280,11 @@ window.G = window.G || {};
     const r = run, p = r.player, rd = r.roomData || {};
     if (r.ended) return;
     r.roomTime += dt;
+    if (net.role === 'guest') {      // invité : vagues, coffres et fin de salle décidés par l'hôte ; la porte demande le changement
+      if (r.roomState === 'cleared' && !r.transition && p.pos.z < -HALF && !p.dead) { r.transition = true; r.netDoorT = 0; sfx('door'); netCall('door'); }
+      else if (r.transition && r.netDoorT != null && (r.netDoorT += dt) > 4) { r.transition = false; r.netDoorT = null; }     // pas de réponse : on peut réessayer
+      return;
+    }
     if (r.roomState === 'fight') {
       if (r.roomKind === 'ext') {
         const rt = r.rt;
@@ -1479,6 +1505,10 @@ window.G = window.G || {};
     const r = run;
     opts = opts || {};
     if (!r || !r.player) return false;
+    if (net.aggro && net.aggro.remote) {      // hôte : l'attaque visait un allié distant → dégâts envoyés à son client
+      if (net.aggro.dead || r.finished || r.ended === 'victory' || (r.bossIntro && r.bossIntro.cine)) return false;
+      return netCall('hurtRemote', net.aggro, Math.max(0, num(dmg, 1)), opts) !== false;
+    }
     const p = r.player;
     if (p.dead || r.finished || r.ended === 'victory') return false;
     if (r.bossIntro && r.bossIntro.cine) return false;      // intouchable pendant l'intro cinématique
@@ -1529,8 +1559,13 @@ window.G = window.G || {};
     profile.stats.deaths = (profile.stats.deaths || 0) + 1;
     sfx('defeat'); shake(0.7); hitStop(0.15);
     FX('burst', V3(p.pos.x, 1, p.pos.z), 0xff3040, 30, { speed: 5, up: 4, life: 0.9, size: 0.18, gravity: 10 });
-    banner('Vous êtes tombé…', 1.6);
     if (p.aim) p.aim.visible = false;
+    if (net.role) {       // coop : à terre, un allié peut réanimer ; l'hôte termine si tout le groupe est tombé
+      banner('À terre !<br><small>Un allié peut te réanimer</small>', 2);
+      netCall('down');
+      return;
+    }
+    banner('Vous êtes tombé…', 1.6);
     r.ended = 'defeat';
     addTimer(1.9, () => finishRun(false, 'mort'));
   }
@@ -2159,6 +2194,7 @@ window.G = window.G || {};
   }
   function openChestGame() {
     const r = run;
+    if (net.role) { r.chestState = 'opening'; sfx('click'); resolveChest(true); return; }     // coop : pas de mini-jeu bloquant
     r.chestState = 'opening';
     r.modal = true;                // le jeu est figé pendant le mini-jeu
     sfx('click');
@@ -2255,6 +2291,10 @@ window.G = window.G || {};
       fromWave: !!opts.fromWave, tele: null, castN: 0, wallHit: false, dead: false,
       flash: prepareFlash(mesh),
     };
+    if (net.role) {
+      e.netId = opts.netId || ('e' + (++net.seq));
+      if (net.role === 'guest') { e.puppet = true; if (!opts.netId) e.netOrphan = true; }     // ennemi né localement chez l'invité : retiré au prochain instantané
+    }
     e.label = attachLabel(mesh, height + 0.35, elite ? 'elite' : 'enemy');
     e.label.set(1);
     if (def.name && (elite || affixes)) e.label.setText(def.name);
@@ -2337,7 +2377,10 @@ window.G = window.G || {};
       return 0;
     }
     const hpBefore = e.pv;
-    e.pv -= dealt;
+    if (e.puppet) {       // invité : l'hôte applique les dégâts (prédiction locale sans mise à mort)
+      netCall('guestDamage', e, dealt, el, crit, kind);
+      e.pv = Math.max(1, e.pv - dealt);
+    } else e.pv -= dealt;
     e.lastHurt = clockTime;
     e.flashK = 1; e.flashColor = 0xffffff;
     r.stats.damageDealt += dealt;
@@ -2370,7 +2413,7 @@ window.G = window.G || {};
     }
     if (crit) hitStop(0.03);
     e.label.set(Math.max(0, e.pv) / e.pvMax);
-    if (e.boss) { HUD('setBoss', e.def.name, Math.max(0, e.pv) / e.pvMax); checkPhase(e); }
+    if (e.boss) { HUD('setBoss', e.def.name, Math.max(0, e.pv) / e.pvMax); if (!e.puppet) checkPhase(e); }
     emit('damageDealt', { target: e, amount: dealt, crit, element: el, kind, source });
     if (e.pv <= 0) killEnemy(e, source, Math.max(0, dealt - Math.max(0, hpBefore)), el);
     return dealt;
@@ -2628,7 +2671,40 @@ window.G = window.G || {};
   }
 
   function updateEnemy(e, dt, time) {
-    const r = run, p = r.player;
+    if (!net.role) { updateEnemyInner(e, dt, time); return; }
+    if (e.puppet) { updatePuppet(e, dt, time); return; }
+    net.aggro = netPickAggro(e);
+    try { updateEnemyInner(e, dt, time); } finally { net.aggro = null; }
+  }
+  /** Invité : l'ennemi est piloté par les instantanés de l'hôte (position interpolée, PV, état). Aucune IA locale. */
+  function updatePuppet(e, dt, time) {
+    if (e.spawnT > 0) {
+      e.spawnT -= dt;
+      const k = clamp(1 - e.spawnT / e.spawnDur, 0, 1);
+      e.mesh.scale.setScalar(Math.max(0.01, e.baseScale * easeOutBack(k)));
+      if (!e.boss) e.pos.y = (1 - k) * -0.5;
+      if (e.spawnT <= 0) { e.mesh.scale.setScalar(e.baseScale); if (!e.boss) e.pos.y = 0; }
+    }
+    e.flashK = Math.max(0, e.flashK - dt * 6);
+    if (!tickStatuses(e, dt)) return;      // brûlures posées par l'invité : les dégâts partent vers l'hôte
+    const t = e.netT;
+    let moving = false;
+    if (t && !(e.boss && run.bossIntro)) {
+      const k = 1 - Math.exp(-dt * 14);
+      const ox = e.pos.x, oz = e.pos.z;
+      const ahead = clamp(clockTime - num(t.t, clockTime), 0, 0.15) + 0.06;      // extrapolation courte (latence de l'instantané)
+      e.pos.x += (t.x + num(t.vx, 0) * ahead - e.pos.x) * k; e.pos.z += (t.z + num(t.vz, 0) * ahead - e.pos.z) * k;
+      moving = Math.hypot(e.pos.x - ox, e.pos.z - oz) / Math.max(dt, 1e-3) > 0.3;
+      if (t.ry != null) e.mesh.rotation.y = lerpAngle(e.mesh.rotation.y, t.ry, k);
+    }
+    const w = e.netW || 0, a = e.netA || 0;
+    if (w > 0 && e.flashK < 0.5 * w) { e.flashK = 0.5 * w; e.flashColor = 0xff3030; }
+    applyFlash(e.flash, e.flashColor, e.flashK);
+    if (!e.extAI || e.boss) safe(G.GFX, 'animateCharacter', [e.mesh, time + e.animOff, { moving, windup: w, attack: a }]);
+    else { const ud = e.mesh.userData || {}; if (typeof ud.animate === 'function') { try { ud.animate(time + e.animOff, { moving, windup: w, attack: a }); } catch (_) { /* rien */ } } else safe(G.GFX, 'animateCharacter', [e.mesh, time + e.animOff, { moving, windup: w, attack: a }]); }
+  }
+  function updateEnemyInner(e, dt, time) {
+    const r = run, p = net.aggro || r.player;
     // apparition (sort du sol)
     if (e.spawnT > 0) {
       e.spawnT -= dt;
@@ -2695,13 +2771,14 @@ window.G = window.G || {};
     // flash (blanc si touché, rouge pendant un windup)
     applyFlash(e.flash, e.flashColor, e.flashK);
     safe(G.GFX, 'animateCharacter', [e.mesh, time + e.animOff, { moving: Math.hypot(out.vx, out.vz) > 0.3, windup: clamp(out.windup, 0, 1), attack: clamp(out.attack, 0, 1) }]);
+    if (net.role) { e.netW = clamp(out.windup, 0, 1); e.netA = clamp(out.attack, 0, 1); }
   }
   /** Lueur d'avertissement pendant la préparation d'une attaque */
   function warnFlash(e, k, color) { if (e.flashK < k) { e.flashK = k; e.flashColor = color || 0xff3030; } }
 
   // Mêlée : poursuite + coup annoncé (~0.35 s) esquivable
   function aiMelee(e, dt, u, d, spd, out) {
-    const p = run.player;
+    const p = tgtP();
     const reach = num(e.def.range, 1.2) + p.r + e.r * 0.6;
     if (e.state === 'chase') {
       if (d > reach * 0.8) { out.vx = u.x * spd; out.vz = u.z * spd; }
@@ -2733,7 +2810,7 @@ window.G = window.G || {};
 
   // Distance : garde ses distances (5-9), ligne de visée annoncée puis tir
   function aiRanged(e, dt, u, d, spd, out) {
-    const p = run.player;
+    const p = tgtP();
     if (e.state === 'move') {
       e.strafeT -= dt;
       if (e.strafeT <= 0) { e.strafe *= -1; e.strafeT = 1.5 + Math.random() * 1.5; }
@@ -2771,7 +2848,7 @@ window.G = window.G || {};
 
   // Chargeur : s'arrête, ligne annoncée, fonce en ligne droite
   function aiCharger(e, dt, u, d, spd, out) {
-    const p = run.player;
+    const p = tgtP();
     const LEN = Math.max(8, num(e.def.range, 6) * 1.8);   // range = distance de déclenchement de la charge
     if (e.state === 'chase') {
       out.vx = u.x * spd; out.vz = u.z * spd; out.face = u;
@@ -2815,7 +2892,7 @@ window.G = window.G || {};
 
   // Lanceur de sorts : se téléporte / tire des orbes en éventail
   function aiCaster(e, dt, u, d, spd, out) {
-    const r = run, p = r.player;
+    const r = run, p = tgtP();
     if (e.state === 'move') {
       let mx = 0, mz = 0;
       const far = num(e.def.range, 8), near = Math.max(2.5, far * 0.7);
@@ -2887,7 +2964,7 @@ window.G = window.G || {};
       if (!e.dead) updateEnemy(e, dt, time);
       if (run !== r) return;
     }
-    separateEnemies();
+    if (net.role !== 'guest') separateEnemies();
     r.enemies = r.enemies.filter(e => !e.dead);
     // petite animation de mort (rétrécit et s'enfonce)
     for (const c of r.corpses) {
@@ -2935,6 +3012,7 @@ window.G = window.G || {};
     };
     e.flash = prepareFlash(mesh);
     e.label = { set() {}, setText() {}, remove() {} };     // barre de boss dans le HUD
+    if (net.role) { e.netId = 'b' + r.roomIndex + (mini ? 'm' : ''); if (net.role === 'guest') e.puppet = true; }
     r.enemies.push(e);
     r.tdirty = true;
     r.boss = e;
@@ -3255,7 +3333,7 @@ window.G = window.G || {};
 
   // --- IA du boss ---------------------------------------------------------
   function updateBoss(b, dt, u, d, out) {
-    const r = run, p = r.player;
+    const r = run, p = tgtP();
     if (r.bossIntro) return;
     checkPhase(b);     // PV modifiés hors dégâts (QA, mécaniques) : la phase suit quand même
     if (b.staggered && b.state === 'idle') { out.face = u; return; }
@@ -3661,14 +3739,20 @@ window.G = window.G || {};
           pr.hits.push(e);
           if (pr.hits.length > pr.pierce) { endProjectile(pr); break; }
         }
-      } else if (!p.dead) {
-        if (Math.hypot(p.pos.x - m.x, p.pos.z - m.z) < p.r + pr.radius) {
+      } else {
+        if (!p.dead && Math.hypot(p.pos.x - m.x, p.pos.z - m.z) < p.r + pr.radius) {
           if (p.invuln > 0) {
             if (!pr.dodgeChecked) { pr.dodgeChecked = true; hurtPlayer(pr.dmg, { slow: pr.slow, element: pr.element, source: 'projectile' }); }
           } else {
             const kb = pr.stats; void kb;
             hurtPlayer(pr.dmg, { slow: pr.slow, element: pr.element, source: 'projectile' }); endProjectile(pr); continue;
           }
+        }
+        if (net.role === 'host' && !pr.dead) {     // projectiles ennemis contre les alliés distants
+          const rl = net.remotes() || [];
+          let hitR = null;
+          for (let k = 0; k < rl.length; k++) { const q = rl[k]; if (q && !q.dead && q.pos && Math.hypot(q.pos.x - m.x, q.pos.z - m.z) < num(q.r, 0.5) + pr.radius) { hitR = q; break; } }
+          if (hitR) { netCall('hurtRemote', hitR, pr.dmg, { slow: pr.slow, element: pr.element, source: 'projectile' }); endProjectile(pr); continue; }
         }
       }
       if (!pr.dead && pr.life <= 0) endProjectile(pr);
@@ -3892,6 +3976,7 @@ window.G = window.G || {};
     inRun: () => !!run && !run.finished,
     run: () => run,
     player() {
+      if (net.aggro && net.aggro.remote) return net.aggro;      // IA externe de l'hôte : cible = allié distant le plus proche
       const p = run && run.player;
       if (!p) return null;
       if (!p.dir) p.dir = V3(0, 0, -1);
@@ -4156,7 +4241,7 @@ window.G = window.G || {};
     ensureFadeEl();
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden && run && !run.modal && !run.finished && screen === 'game') setPaused(true);
+        if (document.hidden && run && !run.modal && !run.finished && screen === 'game' && !net.role) setPaused(true);
       });
     }
     profile = loadProfile();
@@ -4308,6 +4393,148 @@ window.G = window.G || {};
   };
 
   // ===================================================================
+  // 24 bis. PONT RÉSEAU (coop) — utilisé uniquement par js/net/online.js
+  // ===================================================================
+  const r2 = v => Math.round(num(v, 0) * 100) / 100;
+  const netApi = {
+    get role() { return net.role; },
+    /** role 'host' | 'guest' ; cb = rappels ; remotes() = mandataires des alliés */
+    setRole(role, cb, remotes) {
+      net.role = role === 'host' || role === 'guest' ? role : null;
+      net.cb = cb || {};
+      net.remotes = typeof remotes === 'function' ? remotes : () => [];
+      net.aggro = null;
+    },
+    clear() { net.role = null; net.cb = {}; net.remotes = () => []; net.aggro = null; },
+    checkEntry(portal) { return profile ? checkEntry(portal) : { ok: false, reason: 'Aucun héros.' }; },
+    buildDungeon(portal) { const d = buildDungeonFor(portal); return d ? deepClone(d) : null; },
+    /** Lance le donjon partagé (même objet donjon chez tous les joueurs) */
+    startCoop(dungeon, portal) {
+      if (!profile || !dungeon) return false;
+      net.seq = 0;
+      return startRun(deepClone(dungeon), portal ? deepClone(portal) : null, {});
+    },
+    player() { return run ? run.player : null; },
+    inRun() { return !!run && !run.finished; },
+    localState() {
+      const p = run && run.player;
+      if (!p) return null;
+      return { x: r2(p.pos.x), z: r2(p.pos.z), ry: r2(p.hero.rotation.y), mv: p.moving ? 1 : 0, at: p.attackT > 0 ? 1 : 0, pv: Math.round(p.pv), pvMax: Math.round(p.pvMax), dead: p.dead ? 1 : 0, ri: run.roomIndex };
+    },
+    /** Hôte : instantané compact des ennemis */
+    snapshot() {
+      const r = run;
+      if (!r) return null;
+      const en = [];
+      for (let i = 0; i < r.enemies.length; i++) {
+        const e = r.enemies[i];
+        if (e.dead || !e.netId) continue;
+        en.push([e.netId, e.boss ? '' : e.id, r2(e.pos.x), r2(e.pos.z), r2(e.mesh.rotation.y), Math.max(0, Math.ceil(e.pv)), Math.round(e.pvMax), (e.elite ? 1 : 0) | (e.boss ? 2 : 0), r2(e.netW), r2(e.netA)]);
+      }
+      return { ri: r.roomIndex, rs: r.roomState, en };
+    },
+    /** Invité : applique un instantané (création / mise à jour / mort des marionnettes) */
+    applySnapshot(s) {
+      const r = run;
+      if (!r || r.finished || !s || s.ri !== r.roomIndex || r.transition) return;
+      // Firebase enregistre un tableau vide comme « absent », et peut renvoyer un objet {0:…,1:…}
+      const en = Array.isArray(s.en) ? s.en : (s.en && typeof s.en === 'object' ? Object.keys(s.en).map(k => s.en[k]) : []);
+      const seen = new Set();
+      for (let i = 0; i < en.length; i++) {
+        const a = en[i];
+        if (!Array.isArray(a) || a.length < 8) continue;
+        const id = String(a[0]), type = a[1], fl = num(a[7], 0);
+        seen.add(id);
+        let e = null;
+        for (let k = 0; k < r.enemies.length; k++) { const q = r.enemies[k]; if (q.netId === id && !q.dead) { e = q; break; } }
+        if (!e) {
+          if (fl & 2) continue;      // boss : créé par la salle locale (même identifiant)
+          if (typeof type !== 'string' || !hasMonster(type)) continue;
+          e = createEnemy(type, num(a[2], 0), num(a[3], 0), { netId: id, elite: !!(fl & 1), fromWave: true });
+          if (!e) continue;
+        }
+        e.netSeen = true;
+        const nx = num(a[2], e.pos.x), nz = num(a[3], e.pos.z), tn = clockTime;
+        const pv0 = e.netP;
+        let vx = 0, vz = 0;
+        if (pv0 && tn - pv0.t > 0.02 && tn - pv0.t < 0.5) { vx = (nx - pv0.x) / (tn - pv0.t); vz = (nz - pv0.z) / (tn - pv0.t); }
+        e.netP = { x: nx, z: nz, t: tn };
+        e.netT = { x: nx, z: nz, ry: num(a[4], 0), vx: clamp(vx, -12, 12), vz: clamp(vz, -12, 12), t: tn };
+        e.pvMax = Math.max(1, num(a[6], e.pvMax));
+        e.pv = Math.max(1, num(a[5], e.pv));
+        e.netW = num(a[8], 0); e.netA = num(a[9], 0);
+        e.label.set(e.pv / e.pvMax);
+        if (e.boss && !r.bossIntro) HUD('setBoss', e.def.name, e.pv / e.pvMax);
+      }
+      const list = r.enemies.slice();
+      for (let i = 0; i < list.length; i++) {
+        const e = list[i];
+        if (e.dead || !e.puppet) continue;
+        if (e.netOrphan) { despawnEnemy(e); continue; }
+        if (e.netSeen && !seen.has(e.netId)) { e.pv = 0; e.untargetable = false; e.spawnT = 0; killEnemy(e, 'ally', 0, 'physique'); }
+        if (run !== r) return;
+      }
+    },
+    /** Hôte : dégâts calculés par un invité (déjà réduits par ses stats / résistances) */
+    applyRemoteDamage(id, dealt, el, crit) {
+      const r = run;
+      if (!r || r.finished) return 0;
+      const e = r.enemies.find(q => q.netId === id && !q.dead);
+      if (!e || e.spawnT > 0 || (e.boss && r.bossIntro) || e.untargetable) return 0;
+      dealt = Math.round(clamp(num(dealt, 0), 0, 1e7));
+      if (!dealt) return 0;
+      const hpBefore = e.pv;
+      e.pv -= dealt; e.lastHurt = clockTime; e.flashK = 1; e.flashColor = 0xffffff;
+      FX('text', V3(e.pos.x, e.height + 0.2, e.pos.z), crit ? dealt + ' !' : String(dealt), '#9ff3ff', crit ? 1.3 : 0.9);
+      e.label.set(Math.max(0, e.pv) / e.pvMax);
+      if (e.boss) { HUD('setBoss', e.def.name, Math.max(0, e.pv) / e.pvMax); checkPhase(e); }
+      if (e.pv <= 0) killEnemy(e, 'ally', Math.max(0, dealt - Math.max(0, hpBefore)), ELEMENTS.indexOf(el) >= 0 ? el : 'physique');
+      return dealt;
+    },
+    /** Hôte : un allié a franchi la porte → salle suivante pour tout le groupe */
+    door() {
+      const r = run;
+      if (!r || r.ended || r.finished || r.roomState !== 'cleared' || r.transition) return false;
+      r.transition = true;
+      sfx('door');
+      fadeTo(() => {
+        collectAllPickups();
+        const next = nextRoomIndex(r);
+        if (next < r.rooms.length) startRoom(next); else finishRun(true);
+      });
+      return true;
+    },
+    /** Hôte : données de la salle courante (l'invité les reçoit : les embranchements peuvent allonger la liste) */
+    roomData() { const r = run; return r && r.roomData ? deepClone(r.roomData) : null; },
+    /** Invité : l'hôte a changé de salle (rd = données de la salle envoyées par l'hôte) */
+    gotoRoom(i, rd) {
+      const r = run;
+      i = Math.floor(num(i, -1));
+      if (rd && typeof rd === 'object' && i >= 0 && i < 64) { rd._revealed = true; r && (r.rooms[i] = rd); }
+      if (!r || r.finished || i < 0 || i === r.roomIndex || i >= r.rooms.length) return false;
+      r.transition = true; r.netDoorT = null;
+      fadeTo(() => { if (run !== r) return; collectAllPickups(); startRoom(i); });
+      return true;
+    },
+    clearRoom() { const r = run; if (r && !r.finished && r.roomState !== 'cleared') roomCleared(); },
+    finish(victory) { const r = run; if (!r || r.finished) return; if (G.core) G.core.paused = false; finishRun(!!victory, victory ? 'victoire' : 'groupe'); },
+    wipe() { failRun('net', 'Le groupe est anéanti…'); },
+    hurtLocal(dmg, o) { const prev = net.aggro; net.aggro = null; try { return hurtPlayer(num(dmg, 0), o || {}); } finally { net.aggro = prev; } },
+    revive(frac) {
+      const r = run, p = r && r.player;
+      if (!p || !p.dead || r.finished || r.ended) return false;
+      p.dead = false; p.deadT = 0;
+      p.pv = Math.max(1, Math.round(p.pvMax * clamp(num(frac, 0.35), 0.05, 1)));
+      p.invuln = 1.5; p.blinkT = 1.5;
+      p.hero.rotation.x = 0; p.pos.y = 0;
+      p.label.set(p.pv / p.pvMax);
+      FX('ring', V3(p.pos.x, 0.05, p.pos.z), 0x5dff8a, 2.2, 0.7);
+      banner('Réanimé !', 1.2);
+      return true;
+    },
+  };
+
+  // ===================================================================
   // 25. EXPORT + DÉMARRAGE
   // ===================================================================
   G.SkillAPI = Object.assign(G.SkillAPI || {}, SkillAPI);
@@ -4325,6 +4552,7 @@ window.G = window.G || {};
     update,
     calcul_degats,
     debug,
+    net: netApi,
   };
 
   function boot() {

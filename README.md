@@ -27,6 +27,49 @@ three.js r128 est chargé depuis le CDN cdnjs (voir `index.html`) : il faut une 
 
 Le jeu est aussi jouable au tactile.
 
+## Mode en ligne
+
+Onglet **En ligne** du camp, avec quatre sous-onglets : **Compte**, **Amis**, **Guilde** et **Groupe**.
+
+- **Compte :** connexion avec Google, pseudo et code ami à 6 caractères.
+- **Amis :** ajout par code ami, demandes à accepter ou refuser, statut (en ligne, en donjon, hors ligne) et invitation dans ton groupe.
+- **Guildes :** création avec un nom et un tag de 3 ou 4 lettres, puis adhésion par code. Il y a trois rôles (chef, officier, membre) : le chef promeut et exclut. Le chat de guilde garde les 50 derniers messages, avec un anti-spam (un message toutes les 2 secondes au plus).
+- **Groupe et coop (2 à 4 joueurs) :** le chef choisit un portail. Les règles de rang sont vérifiées pour **chaque** joueur. Quand tout le monde est prêt, tous partent en même temps dans le même donjon, avec la même graine.
+
+Le serveur est **Firebase** (Google). Pour l'activer, suis **[SETUP-FIREBASE.md](SETUP-FIREBASE.md)**, puis remplis `js/net/firebase-config.js`.
+Sans configuration, ou sans réseau, le jeu ne contacte rien et reste un jeu solo, sans changement.
+
+### Comment marche la coop
+
+C'est un modèle « hôte autoritaire » : le chef du groupe est l'hôte.
+
+- **L'hôte :** il simule les ennemis et envoie leur état environ 10 fois par seconde. Il décide aussi des vagues, des changements de salle et de la fin du donjon.
+- **Les invités :** chez eux, les ennemis sont des marionnettes. Leur position est interpolée et leur IA locale est désactivée. Les dégâts d'un invité sont envoyés à l'hôte, qui les applique.
+- **Les alliés :** chacun voit les autres avec leur classe et leur skin, plus leur nom et leur barre de PV. Le HUD de groupe s'affiche à gauche.
+- **Mort et réanimation :** un joueur tombé reste **à terre**. Un allié le réanime en restant environ 2 secondes à côté de lui. Si tout le groupe tombe, c'est la défaite pour tous. La victoire est partagée.
+- **Déconnexions :** si l'hôte part, la partie se termine proprement, sans pénalité. Si un invité part, les autres continuent.
+- **Ce que la coop change :** pas de pause du monde (le menu s'ouvre, mais le jeu continue) et pas de mini-jeu de coffre bloquant (le coffre s'ouvre directement).
+
+### Tester la coop sans Firebase (coop locale)
+
+1. Ouvre `index.html?net=local` dans une fenêtre.
+2. Dans une **deuxième fenêtre** du même navigateur, ouvre `index.html?net=local&slot=2` (`slot=2` = second héros, indépendant).
+3. Place les deux fenêtres côte à côte. Un onglet caché est mis en pause par le navigateur, et l'hôte doit rester visible.
+4. Dans l'une des deux : **En ligne → Groupe → Créer un groupe**, puis invite l'autre joueur depuis la liste.
+
+La coop locale utilise `BroadcastChannel`, qui ne marche qu'entre onglets de la même origine. Elle ne gère ni comptes ni guildes.
+
+### Fichiers
+
+| Fichier | Rôle |
+|---|---|
+| `js/net/firebase-config.js` | configuration Firebase à remplir (`enabled:false` par défaut) |
+| `js/net/transport.js` | transport abstrait : `local` (BroadcastChannel) ou `firebase` (Realtime Database) |
+| `js/net/online.js` | `G.Online` : auth, profil, présence, amis, guildes, chat, groupe, synchronisation coop |
+| `js/net/online-ui.js` | panneau « En ligne », notifications, noms et HUD de groupe en jeu |
+| `firestore.rules`, `database.rules.json` | règles de sécurité à publier dans la console Firebase |
+| `js/game.js` (`G.game.net`) | pont réseau : rôle hôte ou invité, marionnettes, dégâts distants, réanimation |
+
 ## Organisation du code
 
 | Dossier | Contenu |
@@ -40,5 +83,6 @@ Le jeu est aussi jouable au tactile.
 | `js/data/` | données : classes, compétences, monstres, boss, donjons, objets, rangs |
 | `js/sys/` | systèmes : progression, compétences, inventaire, portails, horreur, audio… |
 | `js/ui.js`, `js/ui/` | interface et menus |
+| `js/net/` | mode en ligne (Firebase, coop) — voir « Mode en ligne » |
 
 La sauvegarde est stockée dans le `localStorage` du navigateur.

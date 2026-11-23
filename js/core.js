@@ -537,7 +537,9 @@ window.G = window.G || {};
   // ------------------------------------------------------------------
   //  SAUVEGARDE
   // ------------------------------------------------------------------
-  const KEY = 'donjon-arena-save-v2';
+  // ?slot=2 dans l'URL : second profil indépendant (utile pour tester la coop locale à deux onglets)
+  const SLOT = (() => { try { const m = /[?&]slot=([1-9])\b/.exec(location.search); return m && m[1] !== '1' ? '-slot' + m[1] : ''; } catch (_) { return ''; } })();
+  const KEY = 'donjon-arena-save-v2' + SLOT;
   G.save = {
     load() { try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch (_) { return null; } },
     save(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); return true; } catch (_) { return false; } },
