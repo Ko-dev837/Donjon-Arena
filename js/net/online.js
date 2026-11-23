@@ -184,14 +184,42 @@ window.G = window.G || {};
     stopSocial();
     if (!u) { O.user = null; O.me = null; O.friends = []; O.requests = []; O.invites = []; O.guild = null; O.guildMembers = []; O.chat = []; changed('auth'); return; }
     O.user = { uid: u.uid, name: cleanName(u.displayName || 'Joueur'), photo: u.photoURL || null };
-    O.error = null;
-    await ensureUserDoc();
+    O.error = null; O.profileError = null;
+    try { await ensureUserDoc(); }
+    catch (e) {
+      const c = (e && (e.code || e.message)) || 'inconnue';
+      O.profileError = /permission/i.test(c)
+        ? 'Firebase refuse de créer ton profil (permission refusée). Vérifie que la base Firestore est créée et que le contenu de firestore.rules est publié dans Firestore → Règles.'
+        : 'Impossible de créer ton profil en ligne (' + c + ').';
+      console.warn('[Online] profil', e);
+    }
     startPresence();
     watchInvites();
     watchFriends();
     watchMe();
     changed('auth');
+    usePendingFriendCode();
   }
+  // lien d'invitation : https://…/?ami=CODE → demande d'ami automatique après connexion
+  let pendingFriend = null;
+  try { const q = new URLSearchParams(location.search).get('ami'); if (q) pendingFriend = String(q).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); } catch (_) { /* rien */ }
+  function usePendingFriendCode() {
+    if (!pendingFriend || !O.user || !O.me || !O.me.code) return;
+    const c = pendingFriend; pendingFriend = null;
+    try { const u = new URL(location.href); u.searchParams.delete('ami'); history.replaceState(null, '', u.toString()); } catch (_) { /* rien */ }
+    if (c !== O.me.code) Promise.resolve(O.addFriendByCode(c)).catch(() => {});
+  }
+  O.pendingFriendCode = () => pendingFriend;
+  O.friendLink = () => {
+    const code = O.me && O.me.code; if (!code) return '';
+    try { const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('ami', code); return u.toString(); } catch (_) { return '?ami=' + code; }
+  };
+  O.retryProfile = async () => {
+    if (!O.user) return false;
+    O.profileError = null; changed('me');
+    try { await ensureUserDoc(); changed('me'); usePendingFriendCode(); return true; }
+    catch (e) { O.profileError = 'Toujours impossible de créer ton profil (' + ((e && (e.code || e.message)) || 'erreur') + '). Vérifie les règles Firestore.'; changed('me'); return false; }
+  };
 
   // ------------------------------------------------------------------
   // PROFIL Firestore users/{uid} + code ami (codes/{code})

@@ -31,7 +31,7 @@ window.G = window.G || {};
 .net-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ds-text-3);flex:none}
 .net-dot.on{background:var(--ds-success);box-shadow:0 0 8px var(--ds-success)}
 .net-dot.game{background:var(--ds-warning);box-shadow:0 0 8px var(--ds-warning)}
-.net-code{font:700 20px/1 var(--ds-font-display);letter-spacing:.25em;color:var(--ds-gold)}
+.net-code{font:700 20px/1 var(--ds-font-display);letter-spacing:.25em;color:var(--ds-gold)}.net-code--big{font-size:30px;margin:4px 0 6px}.net-codecard{padding:14px}.net-codewrap{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.net-qr{flex:none;background:#fff;border-radius:10px;padding:6px;line-height:0;box-shadow:0 6px 20px rgba(0,0,0,.35)}.net-qr svg{display:block;width:168px;height:168px}.net-row--wrap{flex-wrap:wrap;gap:8px;margin-top:8px}
 .net-note{font-size:12px;color:var(--ds-text-3);line-height:1.4}
 .net-chat{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;padding:8px;border-radius:var(--ds-r-sm);background:rgba(4,8,20,.55);box-shadow:inset 0 0 0 1px var(--ds-line)}
 .net-msg{font-size:13px;line-height:1.35;color:var(--ds-text);word-break:break-word}
@@ -164,8 +164,24 @@ window.G = window.G || {};
     body.innerHTML = `<div class="ds-card net-item"><span class="net-ico">${classIcon(p.classe)}</span><div class="net-main"><div class="net-name">${esc((me.name) || p.nom || 'Joueur')}</div>
         <div class="net-sub">${rankBadge(p.rank)} ${esc(className(p.classe))} · Niv. ${esc(p.niveau || 1)}${o.mode === 'local' ? ' · <span class="ds-chip">Coop locale</span>' : ''}</div></div></div>
       <div class="ds-field"><span class="ds-label">Pseudo</span><div class="net-row"><input class="ds-input" maxlength="20" data-in="pseudo" data-enter="pseudo" value="${esc(me.name || p.nom || '')}" placeholder="Ton pseudo"/>${btn('Enregistrer', 'pseudo', 'ds-btn--primary')}</div></div>
-      ${o.mode === 'firebase' ? `<div class="ds-card ds-card--flat net-item"><div class="net-main"><div class="ds-label">Ton code ami</div><div class="net-code" data-code>${esc(me.code || '……')}</div></div>${btn('Copier', 'copycode')}</div>
+      ${o.mode === 'firebase' ? `${friendCard(o)}
         ${btn('Se déconnecter', 'signout', 'ds-btn--ghost')}` : `<div class="net-note">Coop locale : chaque onglet est un joueur (identifiant ${esc(u && u.uid)}). Les guildes et les demandes d’ami nécessitent Firebase. Astuce : ajoute <b>?net=local&amp;slot=2</b> à l’adresse du second onglet pour utiliser un autre héros.</div>`}`;
+  }
+  function friendCard(o) {
+    const me = o.me || {};
+    if (!me.code) {
+      return `<div class="ds-card net-item net-codecard"><div class="net-main"><div class="ds-label">Ton code ami</div>
+        <div class="net-sub">${esc(o.profileError || 'Création de ton code ami…')}</div></div>${o.profileError ? btn('Réessayer', 'retryprofile', 'ds-btn--primary') : ''}</div>`;
+    }
+    const link = (o.friendLink && o.friendLink()) || '';
+    let qr = '';
+    try { qr = G.QR ? G.QR.svg(link || me.code, { size: 168, dark: '#0b1122', light: '#ffffff', margin: 3 }) : ''; } catch (_) { qr = ''; }
+    return `<div class="ds-card net-codecard">
+        <div class="net-codewrap">${qr ? `<div class="net-qr" title="Scanne pour m'ajouter en ami">${qr}</div>` : ''}
+          <div class="net-main"><div class="ds-label">Ton code ami</div><div class="net-code net-code--big" data-code>${esc(me.code)}</div>
+            <div class="net-sub">Donne ce code à ton ami, ou fais-lui scanner le QR code : il t'ajoute en un geste.</div>
+            <div class="net-row net-row--wrap">${btn('Copier le code', 'copycode', 'ds-btn--primary')}${btn('Copier le lien', 'copylink')}${typeof navigator !== 'undefined' && navigator.share ? btn('Partager', 'sharelink') : ''}</div>
+          </div></div></div>`;
   }
   function tabAmis(body, o) {
     if (o.mode === 'off' || o.mode === 'loading') return offline(body, o);
@@ -173,6 +189,7 @@ window.G = window.G || {};
     const fr = (o.friends || []).slice().sort((a, b) => (b.online - a.online) || String(a.name).localeCompare(b.name));
     let h = '';
     if (o.mode === 'firebase') {
+      h += friendCard(o);
       h += `<div class="ds-field"><span class="ds-label">Ajouter un ami</span><div class="net-row"><input class="ds-input" maxlength="6" data-in="fcode" data-enter="addfriend" placeholder="Code ami (6 caractères)" style="text-transform:uppercase"/>${btn('Envoyer', 'addfriend', 'ds-btn--primary')}</div></div>`;
       if ((o.requests || []).length) {
         h += '<div class="ds-section-title">Demandes reçues</div>' + o.requests.map(r => `<div class="ds-card net-item"><span class="net-ico">👋</span><div class="net-main"><div class="net-name">${esc(r.name)}</div></div>${btn('Accepter', 'accept:' + r.uid, 'ds-btn--success')}${btn('Refuser', 'decline:' + r.uid, 'ds-btn--ghost')}</div>`).join('');
@@ -263,6 +280,9 @@ window.G = window.G || {};
       case 'signout': run(o.signOut()); break;
       case 'pseudo': run(o.setPseudo(val('pseudo'))); break;
       case 'copycode': try { navigator.clipboard.writeText((o.me && o.me.code) || ''); G.UI.toast('Code copié !'); } catch (_) { /* rien */ } break;
+      case 'copylink': try { navigator.clipboard.writeText(o.friendLink ? o.friendLink() : ''); G.UI.toast('Lien d’invitation copié !'); } catch (_) { /* rien */ } break;
+      case 'sharelink': try { navigator.share({ title: 'Donjon Arena 3D', text: 'Ajoute-moi en ami sur Donjon Arena 3D ! Code : ' + ((o.me && o.me.code) || ''), url: o.friendLink ? o.friendLink() : '' }).catch(() => {}); } catch (_) { /* rien */ } break;
+      case 'retryprofile': run(o.retryProfile()); break;
       case 'addfriend': run(o.addFriendByCode(val('fcode'))); break;
       case 'accept': run(o.acceptFriend(arg)); break;
       case 'decline': run(o.declineFriend(arg)); break;
