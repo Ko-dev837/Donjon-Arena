@@ -87,6 +87,7 @@
             "ri": { ".validate": "newData.isNumber()" },
             "cs": { ".validate": "newData.isNumber()" },
             "sl": { ".validate": "newData.isString() && newData.val().length <= 24" },
+            "fx": { "$i": { ".validate": "newData.isString() && newData.val().length <= 900" } },
             "t": { ".validate": "newData.isNumber()" },
             "$other": { ".validate": false }
           }

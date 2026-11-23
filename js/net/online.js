@@ -865,7 +865,18 @@ window.G = window.G || {};
       hurtRemote(proxy, dmg, o) { pushEv({ k: 'hurt', to: proxy.uid, d: Math.round(dmg), el: o && o.element || null, sl: num(o && o.slow, 0) }); return true; },
       guestDamage(e, dealt, el, crit) { pushEv({ k: 'dmg', id: e.netId, d: Math.round(dealt), el: el || 'physique', c: crit ? 1 : 0 }); },
       door() { pushEv({ k: 'door' }); },
-      down() { pushEv({ k: 'down' }); },
+      down() { pushEv({ k: 'down' }); pushAct('defeat'); },
+      cast(slot, rec, dir) {      // sort / attaque du joueur local : même animation + mêmes effets (visuels) chez les alliés
+        const ls = S.lastSkill && perfNow() - S.lastSkill.t < 250 ? S.lastSkill : {};
+        const kind = ls.kind, sl = ls.slot || slot;
+        let k = 'cast', kd = kind || 'skill';
+        if (kind === 'basic' || (!kind && sl === 'cast1')) k = 'attack';
+        else if (kind === 'ultimate' || sl === 'super') k = 'ultimate';
+        else if (kind === 'melee' || (!kind && sl === 'cast2')) kd = 'melee';
+        pushAct(k, { s: ls.id || null, kd, x: dir && dir.x, z: dir && dir.z, f: rec });
+      },
+      act(type, data) { pushAct(type, data && typeof data === 'object' ? { x: data.x, z: data.z, d: data.d } : null); },
+      fx(list) { pushAct('fx', { f: list }); },      // effets différés d'un sort (projectile après incantation) : visuel seul
       objUse(key) { pushEv({ k: 'use', key: String(key).slice(0, 24) }); },      // invité → hôte : ouvrir un coffre / objet partagé
     }, () => {
       const out = [], ri = G.game.run ? G.game.run.roomIndex : -1;
@@ -895,9 +906,11 @@ window.G = window.G || {};
       if (role === 'host') { const rd = G.game.net.roomData(); const js = rd ? JSON.stringify(rd) : ''; pushEv({ k: 'room', i: e.index, rd: js && js.length < 60000 ? js : null }); }
     });
     on('roomCleared', e => { if (O.session === S && role === 'host') pushEv({ k: 'clear', i: e.index }); });
-    on('skillCast', e => { if (O.session === S) { S.cs++; S.lastSlot = e && (e.slot || e.skill || e.id) ? String(e.slot || e.skill || e.id).slice(0, 24) : null; } });
+    on('playerHit', e => { if (O.session === S) pushAct('hit', { d: Math.round(num(e && e.amount, 0)) }); });
+    on('skillCast', e => { if (O.session === S) { S.lastSkill = { id: e && e.skillId ? String(e.skillId).slice(0, 32) : null, kind: e && e.kind || null, slot: e && e.slot || null, t: perfNow() }; S.cs++; S.lastSlot = e && (e.slot || e.skill || e.id) ? String(e.slot || e.skill || e.id).slice(0, 24) : null; } });
     on('runEnd', e => {
       if (O.session !== S) return;
+      if (e && e.victory) { pushAct('victory'); sendState(); }
       if (role === 'host') pushEv({ k: 'end', v: e && e.victory ? 1 : 0, why: e && e.reason === 'abandon' ? 'hostleft' : '' });
       else if (e && e.reason === 'abandon') pushEv({ k: 'leave' });
       endSession(e && e.victory ? 'victory' : 'end');
@@ -915,11 +928,57 @@ window.G = window.G || {};
     const cut = Date.now() - 15000;
     fb.rtdb.ref(L(S.id) + '/ev').orderByChild('at').endAt(cut).limitToFirst(200).once('value').then(s => { const u = {}; s.forEach(c => { u[c.key] = null; }); if (Object.keys(u).length) return fb.rtdb.ref(L(S.id) + '/ev').update(u); }).catch(() => {});
   }
+  const ACT_TTL = 1500, ACT_KINDS = { attack: 1, cast: 1, ultimate: 1, dash: 1, hit: 1, defeat: 1, revive: 1, victory: 1, fx: 1 };
+  /** Enregistre une action du joueur local (envoyée tout de suite, puis répétée dans les états suivants) */
+  function pushAct(k, o) {
+    const S = O.session; if (!S || !ACT_KINDS[k]) return;
+    o = o || {};
+    S.aq = (S.aq || 0) + 1;
+    const f = Array.isArray(o.f) ? o.f.slice(0, 6) : null;
+    S.acts = (S.acts || []).concat([{ q: S.aq, k, t: perfNow(), s: o.s || null, kd: o.kd || null, x: num(o.x, null), z: num(o.z, null), d: num(o.d, null), f: f && f.length ? f : null }]).slice(-4);
+    if (!S.actSendQ) { S.actSendQ = true; setTimeout(() => { S.actSendQ = false; if (O.session === S) sendState(); }, 0); }      // pas d'attente du prochain envoi à 12 Hz
+  }
+  /** Allié distant : joue chaque action une seule fois (n° q croissant), même arrivée en retard */
+  function playActs(o, list) {
+    if (!O.session || !Array.isArray(list)) return;
+    const acts = [];
+    list.forEach(js => { try { const a = typeof js === 'string' ? JSON.parse(js) : null; if (a && typeof a.q === 'number' && ACT_KINDS[a.k]) acts.push(a); } catch (_) { /* paquet illisible : ignoré */ } });
+    acts.sort((x, y) => x.q - y.q);
+    // premier état reçu de ce joueur : on ne rejoue que ce qui vient d'arriver (< 0,4 s)
+    if (o.playedQ == null) { const old = acts.filter(x => num(x.ag, 9999) >= 400); o.playedQ = old.length ? old[old.length - 1].q : 0; }
+    acts.forEach(x => {
+      if (x.q <= o.playedQ) return;      // déjà joué (l'anneau est répété dans plusieurs états)
+      o.playedQ = x.q;
+      if (num(x.ag, 0) > ACT_TTL) return;
+      playAct(o, x);
+    });
+  }
+  const TRIG = { attack: 'attack', cast: 'cast', ultimate: 'ultimate', dash: 'dash', hit: 'hit', defeat: 'defeat', victory: 'victory' };
+  function playAct(o, a) {
+    const hero = o.avatar; if (!hero) return;
+    const here = !!(o.st && G.game.run && o.st.ri === G.game.run.roomIndex);
+    if (typeof a.x === 'number' && typeof a.z === 'number' && (a.x || a.z) && a.k !== 'hit') { hero.rotation.y = Math.atan2(a.x, a.z); o.holdFace = 0.35; }      // tourné vers la cible
+    const H = G.HeroAnim, ud = hero.userData || {};
+    let ok = false;
+    if (a.k === 'revive') { if (H && ud._ha) { H.trigger(hero, 'idle'); ok = H.trigger(hero, 'spawn'); } }
+    else if (H && ud._ha && TRIG[a.k]) {
+      const data = a.k === 'cast' ? { kind: a.kd || 'skill' } : a.k === 'dash' ? { dir: { x: num(a.x, 0), z: num(a.z, 1) }, duration: num(a.d, 0.18) } : a.k === 'hit' ? { amount: num(a.d, 10) } : {};
+      ok = H.trigger(hero, TRIG[a.k], data);
+      if (ok && (a.k === 'attack' || a.k === 'cast' || a.k === 'ultimate') && G.HeroVFX && G.HeroVFX.trail) { try { G.HeroVFX.trail(hero, true, a.k === 'ultimate' ? 0.6 : 0.34); } catch (_) { /* rien */ } }
+    }
+    if (!ok && (a.k === 'attack' || a.k === 'cast' || a.k === 'ultimate')) o.atkT = 0.3;     // ancien modèle : geste d'attaque simple
+    if (here && Array.isArray(a.f) && a.f.length) G.game.net.fxReplay(a.f);      // effets du sort, en visuel seulement
+    o.lastAct = { k: a.k, q: a.q, t: perfNow() };
+  }
   function sendState() {
     const S = O.session; if (!S) return;
     const st = G.game.net.localState();
     if (!st) return;
     st.cs = S.cs; st.sl = S.lastSlot; st.t = Date.now();
+    // actions récentes (anneau de 4, 1,5 s) : un paquet perdu est rattrapé par le suivant, le n° q évite toute double lecture
+    const now = perfNow();
+    S.acts = (S.acts || []).filter(a => now - a.t < ACT_TTL);
+    if (S.acts.length) st.fx = S.acts.map(a => JSON.stringify({ q: a.q, k: a.k, ag: Math.round(now - a.t), s: a.s, kd: a.kd, x: a.x, z: a.z, d: a.d, f: a.f }).slice(0, 900));
     O.db.set(L(S.id) + '/st/' + O.user.uid, st).catch(() => {});
   }
   function addOther(uid, m) {
@@ -965,7 +1024,9 @@ window.G = window.G || {};
         if (o.proxy.dir && o.proxy.dir.set) o.proxy.dir.set(o.proxy.face.x, 0, o.proxy.face.z);
         if (!prev) { o.avatar.position.x = num(st.x, 0); o.avatar.position.z = num(st.z, 0); }
       }
-      if (prev && num(st.cs, 0) > num(prev.cs, 0)) o.atkT = 0.3;     // sort lancé : animation d'attaque
+      if (Array.isArray(st.fx)) playActs(o, st.fx);
+      else if (st.fx && typeof st.fx === 'object') playActs(o, Object.keys(st.fx).map(k2 => st.fx[k2]));      // Firebase : tableau rendu en objet
+      else if (o.playedQ == null) o.playedQ = 0;
       if (prev && !prev.dead && st.dead) notify({ icon: '💀', title: cleanName(o.info.name) + ' est à terre', text: 'Approche-toi pour le réanimer.', kind: 'down' });
     });
     // joueur retiré du flux (onglet fermé, onDisconnect) : déconnexion
@@ -1056,7 +1117,8 @@ window.G = window.G || {};
       a.position.x += (num(st.x, ox) - ox) * k; a.position.z += (num(st.z, oz) - oz) * k;
       const ry = num(st.ry, a.rotation.y);
       let d = ry - a.rotation.y; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
-      a.rotation.y += d * k;
+      o.holdFace = Math.max(0, num(o.holdFace, 0) - dt);
+      if (!(o.holdFace > 0)) a.rotation.y += d * k;      // juste après une attaque : garde l'orientation vers la cible
       a.rotation.x += ((st.dead ? -Math.PI / 2 : 0) - a.rotation.x) * k;
       o.atkT = Math.max(0, o.atkT - dt);
       const opts = { moving: !!st.mv && !st.dead, windup: 0, attack: st.at || o.atkT > 0 ? Math.max(o.atkT / 0.3, st.at ? 0.6 : 0) : 0 };
