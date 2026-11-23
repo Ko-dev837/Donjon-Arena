@@ -1550,7 +1550,7 @@ font-family:var(--k-fb);color:var(--k-tx);max-width:1180px;margin:0 auto;padding
       if (ui.confirm === 'resetspec') h += '<div class="sk-confirm"><span>Abandonner <b>' + esc(sp && sp.name) + '</b> pour <b>' + rc + ' or</b> ?</span>' + btn('ds-btn--danger ds-btn--sm', 'Confirmer', 'data-act="resetspec-ok"' + (num(p.gold, 0) < rc ? ' disabled' : '')) + btn('ds-btn--ghost ds-btn--sm', 'Annuler', 'data-act="cancel"') + '</div>';
       h += '<div class="sk-specs">';
       if (!sp && !revealed(specs[0].unlockLevel || 15)) {
-        return h + '<div class="sk-specs"><div class="sk-sc is-off"><div class="sk-sch">' + ic('lock', 20) + '<div class="sk-scn">Deux voies mystérieuses</div></div><div class="sk-scd">Elles se révèlent quand tu atteins le niveau ' + prevTierOf(specs[0].unlockLevel || 15) + '.</div></div></div>';
+        return h + '<div class="sk-sc is-off" style="grid-column:1/-1"><div class="sk-sch">' + ic('lock', 20) + '<div class="sk-scn">Deux voies mystérieuses</div></div><div class="sk-scd">Elles se révèlent quand tu atteins le niveau ' + prevTierOf(specs[0].unlockLevel || 15) + '.</div></div></div>';
       }
       specs.forEach((s) => {
         const act = sp && sp.id === s.id, locked = lvl < s.unlockLevel, off = sp && !act, d = specSkills[s.id] || (s.skillId && byId[s.skillId]);
