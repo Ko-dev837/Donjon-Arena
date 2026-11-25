@@ -286,7 +286,7 @@ window.G = window.G || {};
     if (!O.user || O.user.uid !== uid) return;
     const remote = snap && snap.exists ? snap.data() : null;
     const local = profile();
-    if (!remote || !remote.data) { cloudReady = true; cloudPushSoon(true); return; }   // compte neuf : on y range le héros de cet appareil
+    if (!remote || !remote.data) { cloudReady = true; if (!local || !local.nom) toast('Aucun héros sauvegardé sur ce compte pour l\u2019instant : ouvre le jeu et connecte-toi d\u2019abord sur l\u2019appareil où tu as ton héros, il sera envoyé sur ton compte.'); cloudPushSoon(true); return; }   // compte neuf : on y range le héros de cet appareil
     let rp = null; try { rp = JSON.parse(remote.data); } catch (_) { rp = null; }
     if (!rp) { cloudReady = true; cloudPushSoon(true); return; }
     if (!local || !local.nom) { if (applyRemote(remote.data)) return; cloudReady = true; return; }
