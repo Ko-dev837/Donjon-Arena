@@ -1,5 +1,5 @@
 /* =====================================================================
-   js/data/ranks.js — RÔLE 2 : rangs E→SS, épreuves de promotion, titres, accomplissements
+   js/data/ranks.js — RÔLE 2 : rangs E→Z, épreuves de promotion, titres, accomplissements
    Données pures (aucune dépendance au chargement). Exposé : G.RANKS, G.RANKS_TRIALS,
    G.TITLES, G.ACHIEVEMENTS, G.RANKS_LEGACY_DUNGEONS.
    ===================================================================== */
@@ -65,10 +65,10 @@ window.G = window.G || {};
       rewards: { skillPoints: 6, attrPoints: 10, talentSlots: 0, gold: 10000, title: 'legende', aura: 'ecarlate' },
     },
     {
-      id: 'SS', name: 'Rang Souverain', short: 'Souverain', color: '#ffd700', icon: '♚',
+      id: 'Z', name: 'Rang Z', short: 'Z', color: '#ffd700', icon: '♚',
       desc: "Le rang des rangs. Moins d'un chasseur sur dix mille l'atteint. Une aura dorée vivante, des couronnes de lumière : le monde plie devant vous.",
       aura: { color: '#ffd700', intensity: 1, particles: 48, radius: 1.9, rings: 4 },
-      requirements: { level: 30, power: 2150, bossesKilled: 400, dungeonsCleared: { rank: 'S', count: 1 }, achievements: { count: 30 }, mustHave: ['boss_80', 'flawless_10', 'trials_5'], trialId: 'trial_SS' },
+      requirements: { level: 30, power: 2150, bossesKilled: 400, dungeonsCleared: { rank: 'S', count: 1 }, achievements: { count: 30 }, mustHave: ['boss_80', 'flawless_10', 'trials_5'], trialId: 'trial_Z' },
       bonus: { pvMult: 0.32, dmg: 0.25, crit: 0.045, defense: 24, xpMult: 0.15, goldMult: 0.2, lootLuck: 0.18, minionCap: 3, cdr: 0.08 },
       rewards: { skillPoints: 10, attrPoints: 15, talentSlots: 0, gold: 25000, title: 'souverain', aura: 'doree' },
     },
@@ -118,7 +118,7 @@ window.G = window.G || {};
       rewards: { xp: 3500, gold: 5000 },
     },
     {
-      id: 'trial_SS', rank: 'SS', name: "Épreuve du Souverain",
+      id: 'trial_Z', rank: 'Z', name: "Épreuve du Souverain",
       desc: "L'ultime. Trois coups, aucune potion, aucune roulade, aucune seconde chance. Le démon du volcan, au sommet de sa puissance.",
       templateHint: { theme: 'volcan', boss: 'demon', rooms: { min: 6, max: 8 }, danger: 5 },
       constraints: { timeLimit: 720, noPotions: true, noDash: true, maxHits: 3, noHealDrops: true, oneLife: true, survive: { seconds: 150, endless: true }, bossBuff: { hp: 2.5, dmg: 1.6, speed: 1.2 } },
@@ -140,7 +140,7 @@ window.G = window.G || {};
     { id: 'veteran', name: 'Vétéran des brèches', desc: 'Promu au rang B.', bonus: { defense: 2 } },
     { id: 'heros', name: 'Héros éclatant', desc: 'Promu au rang A.', bonus: { dmg: 0.02 } },
     { id: 'legende', name: 'Légende vivante', desc: 'Promu au rang S.', bonus: { pvMult: 0.02, dmg: 0.02 } },
-    { id: 'souverain', name: 'Souverain', desc: 'Promu au rang SS.', bonus: { dmg: 0.03, pvMult: 0.03, xpMult: 0.05 } },
+    { id: 'souverain', name: 'Souverain', desc: 'Promu au rang Z.', bonus: { dmg: 0.03, pvMult: 0.03, xpMult: 0.05 } },
     { id: 'briseur_portails', name: 'Briseur de portails', desc: 'Terminer 25 portails.', bonus: { xpMult: 0.02 } },
     { id: 'fleau_boss', name: 'Fléau des boss', desc: 'Vaincre 25 boss.', bonus: { dmg: 0.02 } },
     { id: 'lame_vive', name: 'Lame vive', desc: 'Réussir 30 parades parfaites.', bonus: { crit: 0.01 } },
@@ -227,7 +227,7 @@ window.G = window.G || {};
     A('level_30', 'Sommet', 'Atteindre le niveau 30.', '🏔️', 'level', 30, { gold: 4800, attrPoints: 3, skillPoints: 2 }),
     A('rank_c', 'Aguerri', 'Atteindre le rang C.', '🔷', 'rankIndex', 2, { gold: 500 }),
     A('rank_a', 'Élite', 'Atteindre le rang A.', '🔶', 'rankIndex', 4, { gold: 3000, attrPoints: 2 }),
-    A('rank_ss', '??? — Souverain', 'Atteindre le rang Souverain.', '♚', 'rankIndex', 6, { gold: 30000, attrPoints: 5, skillPoints: 3 }, true),
+    A('rank_ss', '??? — Souverain', 'Atteindre le rang Z.', '♚', 'rankIndex', 6, { gold: 30000, attrPoints: 5, skillPoints: 3 }, true),
   ];
 
   G.RANKS = RANKS;

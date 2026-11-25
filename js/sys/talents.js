@@ -10,7 +10,7 @@ window.G = window.G || {};
   const M = () => G.TALENT_META;
   const K = () => G.TalentKit;
   const prof = () => (G.game && G.game.profile) || null;
-  const rankOrder = () => (G.Ranks && G.Ranks.order) || ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const rankOrder = () => (G.Ranks && G.Ranks.order) || ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
 
   let removers = [];          // fonctions de retrait des dons + synergies actifs
   let appliedSig = null;

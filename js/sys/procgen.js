@@ -15,7 +15,7 @@ window.G = window.G || {};
 (() => {
   'use strict';
 
-  const RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const ri = (r) => Math.max(0, RANKS.indexOf(r));
   const LAYOUTS = ['arena', 'pillars', 'cross'];
   // layouts par architecture (copie de js/gfx/dungeon-themes.js pour rester déterministe sans rendu)

@@ -16,7 +16,7 @@ window.G = window.G || {};
   'use strict';
   const G = window.G;
   const SLOTS = ['cast1', 'cast2', 'cast3', 'super'];
-  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const V2_KIT = { basic: 'v2_epee', cast2: 'v2_dague', cast3: 'v2_feu', super: 'v2_tornade' };   // legacy (sauvegardes) — plus un kit
   const SKILL_VERSION = 5;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

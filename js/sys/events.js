@@ -29,7 +29,7 @@ window.G = window.G || {};
   function srng(seed) { let s2 = (Math.floor(Number(seed) || 1) >>> 0) || 1; return () => { s2 = (Math.imul(s2, 1664525) + 1013904223) >>> 0; return s2 / 4294967296; }; }
   const rint = (a, b) => G.rng.int(a, b);
   const safe = (fn, fb) => { try { return fn(); } catch (e) { console.error('[events]', e); return fb; } };
-  const rankIdx = (run) => { const r = run && run.dungeon && run.dungeon.rank; return Math.max(0, ['E', 'D', 'C', 'B', 'A', 'S', 'SS'].indexOf(r)); };
+  const rankIdx = (run) => { const r = run && run.dungeon && run.dungeon.rank; return Math.max(0, ['E', 'D', 'C', 'B', 'A', 'S', 'Z'].indexOf(r)); };
 
   let cur = null;           // état de la salle spéciale active
   const traps = [];         // pièges actifs (salles piège ou mécanique pieges_pics)

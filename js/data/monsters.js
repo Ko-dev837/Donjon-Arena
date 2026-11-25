@@ -9,7 +9,7 @@
 window.G = window.G || {};
 (() => {
   'use strict';
-  const RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const rIdx = (r) => { const i = RANKS.indexOf(r); return i < 0 ? 0 : i; };
 
   // Facteurs par rang (alignés sur les paliers v2 de content.js : TIER pv/dmg/xp/gold/speed)
@@ -230,12 +230,12 @@ window.G = window.G || {};
     { icon: '🌋', element: 'feu', resist: { physique: 0.6, feu: 0.3 }, weak: { glace: 1.6, foudre: 1.2 }, abilities: ['enrage'],
       desc: 'Coups lents mais dévastateurs. Très résistant.' });
 
-  // --- Rang SS : Souverain
-  mk('ver_cendres', 'Ver de cendres', 'SS', ['volcan', 'abysse'], 'ashWyrm', 'burrower',
+  // --- Rang Z : Souverain
+  mk('ver_cendres', 'Ver de cendres', 'Z', ['volcan', 'abysse'], 'ashWyrm', 'burrower',
     { pv: 30, speed: 3.2, dmg: 4.8, xp: 60, gold: [30, 50], attackCd: 3.0, range: 2.2 },
     { icon: '🐉', element: 'feu', resist: { feu: 0.2 }, weak: { glace: 1.5 }, blastRadius: 3.0, scale: 1.15,
       desc: 'Un ver colossal. Cercle d\'éruption énorme.' });
-  mk('archonte_voile', 'Archonte du Voile', 'SS', ['abysse'], 'veilArchon', 'summoner',
+  mk('archonte_voile', 'Archonte du Voile', 'Z', ['abysse'], 'veilArchon', 'summoner',
     { pv: 30, speed: 3.0, dmg: 5, xp: 70, gold: [35, 60], attackCd: 2.2, range: 9, projectile: 'orb', projSpeed: 12 },
     { icon: '🎭', element: 'ombre', resist: { ombre: 0.1, physique: 0.7 }, weak: { sacre: 1.7 }, summon: 'ombre_rampante', summonCount: 2, summonMax: 4,
       abilities: ['blink', 'barrier'], desc: 'Invoque des ombres, se téléporte et se protège.' });
@@ -385,13 +385,13 @@ window.G = window.G || {};
   derive('archiviste_elite', 'Archiviste spectral', 'mage_spectral', 'C', {}, ['warded', 'teleporter']);
   derive('soldat_ombre_errant', "Soldat d'ombre errant", 'squelette_abyssal', 'B', { tint: 0x241338, element: 'ombre', resist: { ombre: 0.3, physique: 0.8 }, weak: { sacre: 1.6 }, themes: ['abysse'] });
   derive('murene_spectrale', 'Murène spectrale', 'ver_tombes', 'B', { tint: 0x7fd8ff, element: 'ombre', themes: ['abysse'], desc: 'Nage sous la surface puis surgit.' });
-  // Rang A / S / SS
+  // Rang A / S / Z
   derive('sentinelle_celeste', 'Sentinelle céleste', 'sentinelle_runique', 'A', { tint: 0xfff2a8, themes: ['glace', 'abysse'], desc: 'Gardienne des cieux : rayons et nova sacrée.' });
   derive('sentinelle_faille', 'Sentinelle de la faille', 'sentinelle_runique', 'S', { tint: 0xb44dff, element: 'ombre', resist: { ombre: 0.2, physique: 0.5 }, weak: { sacre: 1.4 }, themes: ['abysse', 'volcan'] });
   derive('horreur_cristalline', 'Horreur cristalline', 'golem_cristal', 'S', { tint: 0xd68cff, element: 'ombre', abilities: ['barrier'], themes: ['abysse', 'volcan'] });
   derive('golem_forge', 'Golem de forge', 'colosse_obsidienne', 'S', { model: 'obsidianColossus', tint: 0xd35a1f, scale: 0.95, themes: ['volcan'] });
-  derive('spectre_neant', 'Spectre du Néant', 'spectre_abyssal', 'SS', { tint: 0x3a0066, abilities: ['blink'], themes: ['abysse'] });
-  derive('chevalier_neant', 'Chevalier du Néant', 'chevalier_spectral', 'SS', { tint: 0x2b0050, themes: ['abysse'] });
+  derive('spectre_neant', 'Spectre du Néant', 'spectre_abyssal', 'Z', { tint: 0x3a0066, abilities: ['blink'], themes: ['abysse'] });
+  derive('chevalier_neant', 'Chevalier du Néant', 'chevalier_spectral', 'Z', { tint: 0x2b0050, themes: ['abysse'] });
   MONSTERS.specimen_dore.tags = ['golden'];
   MONSTERS.specimen_dore.tint = null;
 
@@ -587,18 +587,18 @@ window.G = window.G || {};
   M('abime_ange_dechu', 'Ange déchu', 'S', 'abime_infernal', 'secret', 'passive', { cat: 'secret', fam: 'demon', icon: '🪽', el: 'sacre', stat: { pv: 90 }, x: { secretMode: 'talk', fightAi: 'teleporter', lines: ['Libère-moi...', 'Ou achève-moi.', 'Ils m\'ont arraché le ciel.'] }, desc: 'Enchaîné au fond de l\'abîme. Libérez-le ou achevez-le.' });
   M('abime_traqueur_braise', 'Traqueur de braise', 'S', 'abime_infernal', 'hunter', 'hunt', { cat: 'dangereux', fam: 'bete', icon: '🐺', el: 'feu', res: { feu: 0.1 }, weak: { glace: 1.5 }, scale: 1.2, x: { stamina: 15 }, desc: 'Un molosse géant qui traque l\'odeur de la peur. Sa respiration le trahit.' });
 
-  // ===== 12. L'OBSERVATOIRE DU NÉANT (rang SS · ombre) =====
-  M('obs_astronome_vide', 'Astronome du vide', 'SS', 'observatoire_neant', 'kiter', 'caster', { fam: 'spectre', icon: '🔭', el: 'ombre', res: { ombre: 0.1 }, weak: { sacre: 1.6 }, x: { burst: 3 }, desc: 'Lit votre mort dans les étoiles.' });
-  M('obs_etoile_morte', 'Étoile morte', 'SS', 'observatoire_neant', 'bomber', 'melee', { fam: 'meca', icon: '⭐', el: 'ombre', res: { ombre: 0.2 }, weak: { sacre: 1.5 }, x: { blastRadius: 3.4 }, stat: { range: 3 }, desc: 'Une étoile qui s\'effondre : explose après une mèche.' });
-  M('obs_oeil_neant', 'Œil du Néant', 'SS', 'observatoire_neant', 'turret', 'caster', { fam: 'meca', icon: '👁️', el: 'ombre', res: { ombre: 0.1 }, weak: { sacre: 1.6 }, stat: { speed: 0, range: 13, attackCd: 3, projectile: 'orb', projSpeed: 15 }, desc: 'Fixe le héros : rayon annoncé, puis nova.' });
-  M('obs_engrenage_vivant', 'Engrenage vivant', 'SS', 'observatoire_neant', 'charger', 'tank', { fam: 'meca', icon: '⚙️', el: 'physique', res: { physique: 0.6 }, weak: { foudre: 1.4 }, stat: { range: 10, attackCd: 2.8 }, desc: 'Un amas de rouages qui roule en ligne droite.' });
-  M('obs_marcheur_entre_mondes', 'Marcheur entre les mondes', 'SS', 'observatoire_neant', 'teleporter', 'melee', { fam: 'armure', icon: '🌀', el: 'ombre', res: { ombre: 0.2 }, weak: { sacre: 1.5 }, x: { arriveRadius: 2.4 }, desc: 'Entre deux portails ; surgit à vos côtés.' });
-  M('obs_ombre_constellation', 'Ombre de constellation', 'SS', 'observatoire_neant', 'stalker', 'stalk', { fam: 'brume', icon: '✨', el: 'ombre', res: { ombre: 0.1, physique: 0.6 }, weak: { sacre: 1.6 }, danger: true, desc: 'Silhouette piquetée d\'étoiles : traque hors de la lumière.' });
-  M('obs_fragment_neant', 'Fragment du Néant', 'SS', 'observatoire_neant', 'swarm', 'fodder', { fam: 'nuee', icon: '◆', el: 'ombre', res: { ombre: 0.2 }, weak: { sacre: 1.5 }, group: [4, 6], desc: 'Éclats de vide qui tourbillonnent.' });
-  M('obs_gardien_orbite', 'Gardien de l\'orbite', 'SS', 'observatoire_neant', 'guardian', 'brute', { cat: 'elite', fam: 'meca', icon: '🪐', aff: ['warded', 'armored'], el: 'ombre', res: { ombre: 0.2 }, weak: { sacre: 1.4 }, x: { shieldPct: 0.35 }, desc: 'Des anneaux d\'astrolabe en orbite autour de lui.' });
-  M('obs_comete_errante', 'Comète errante', 'SS', 'observatoire_neant', 'fleeing', 'loot', { cat: 'rare', fam: 'nuee', icon: '☄️', stat: { speed: 6.4 }, x: { escapeTime: 12 }, desc: 'Une comète qui rase le sol. Fugitive.' });
-  M('obs_premier_eveille', 'Premier éveillé', 'SS', 'observatoire_neant', 'secret', 'passive', { cat: 'secret', fam: 'spectre', icon: '🧍', el: 'ombre', stat: { pv: 100 }, x: { secretMode: 'talk', fightAi: 'teleporter', lines: ['Je regarde depuis le début.', 'Il nous regarde aussi.', 'Ne lève pas les yeux.'] }, desc: 'Le premier chasseur, figé face au télescope. Il parle sans bouger.' });
-  M('obs_regard_fixe', 'Regard fixe', 'SS', 'observatoire_neant', 'weeping', 'brute', { cat: 'dangereux', fam: 'pierre', icon: '👁️‍🗨️', el: 'ombre', res: { ombre: 0.2, physique: 0.5 }, weak: { sacre: 1.5 }, x: { creepMul: 1.8, stoneMult: 0.3 }, desc: 'Un œil de pierre qui ne bouge que si vous cessez de le regarder.' });
+  // ===== 12. L'OBSERVATOIRE DU NÉANT (rang Z · ombre) =====
+  M('obs_astronome_vide', 'Astronome du vide', 'Z', 'observatoire_neant', 'kiter', 'caster', { fam: 'spectre', icon: '🔭', el: 'ombre', res: { ombre: 0.1 }, weak: { sacre: 1.6 }, x: { burst: 3 }, desc: 'Lit votre mort dans les étoiles.' });
+  M('obs_etoile_morte', 'Étoile morte', 'Z', 'observatoire_neant', 'bomber', 'melee', { fam: 'meca', icon: '⭐', el: 'ombre', res: { ombre: 0.2 }, weak: { sacre: 1.5 }, x: { blastRadius: 3.4 }, stat: { range: 3 }, desc: 'Une étoile qui s\'effondre : explose après une mèche.' });
+  M('obs_oeil_neant', 'Œil du Néant', 'Z', 'observatoire_neant', 'turret', 'caster', { fam: 'meca', icon: '👁️', el: 'ombre', res: { ombre: 0.1 }, weak: { sacre: 1.6 }, stat: { speed: 0, range: 13, attackCd: 3, projectile: 'orb', projSpeed: 15 }, desc: 'Fixe le héros : rayon annoncé, puis nova.' });
+  M('obs_engrenage_vivant', 'Engrenage vivant', 'Z', 'observatoire_neant', 'charger', 'tank', { fam: 'meca', icon: '⚙️', el: 'physique', res: { physique: 0.6 }, weak: { foudre: 1.4 }, stat: { range: 10, attackCd: 2.8 }, desc: 'Un amas de rouages qui roule en ligne droite.' });
+  M('obs_marcheur_entre_mondes', 'Marcheur entre les mondes', 'Z', 'observatoire_neant', 'teleporter', 'melee', { fam: 'armure', icon: '🌀', el: 'ombre', res: { ombre: 0.2 }, weak: { sacre: 1.5 }, x: { arriveRadius: 2.4 }, desc: 'Entre deux portails ; surgit à vos côtés.' });
+  M('obs_ombre_constellation', 'Ombre de constellation', 'Z', 'observatoire_neant', 'stalker', 'stalk', { fam: 'brume', icon: '✨', el: 'ombre', res: { ombre: 0.1, physique: 0.6 }, weak: { sacre: 1.6 }, danger: true, desc: 'Silhouette piquetée d\'étoiles : traque hors de la lumière.' });
+  M('obs_fragment_neant', 'Fragment du Néant', 'Z', 'observatoire_neant', 'swarm', 'fodder', { fam: 'nuee', icon: '◆', el: 'ombre', res: { ombre: 0.2 }, weak: { sacre: 1.5 }, group: [4, 6], desc: 'Éclats de vide qui tourbillonnent.' });
+  M('obs_gardien_orbite', 'Gardien de l\'orbite', 'Z', 'observatoire_neant', 'guardian', 'brute', { cat: 'elite', fam: 'meca', icon: '🪐', aff: ['warded', 'armored'], el: 'ombre', res: { ombre: 0.2 }, weak: { sacre: 1.4 }, x: { shieldPct: 0.35 }, desc: 'Des anneaux d\'astrolabe en orbite autour de lui.' });
+  M('obs_comete_errante', 'Comète errante', 'Z', 'observatoire_neant', 'fleeing', 'loot', { cat: 'rare', fam: 'nuee', icon: '☄️', stat: { speed: 6.4 }, x: { escapeTime: 12 }, desc: 'Une comète qui rase le sol. Fugitive.' });
+  M('obs_premier_eveille', 'Premier éveillé', 'Z', 'observatoire_neant', 'secret', 'passive', { cat: 'secret', fam: 'spectre', icon: '🧍', el: 'ombre', stat: { pv: 100 }, x: { secretMode: 'talk', fightAi: 'teleporter', lines: ['Je regarde depuis le début.', 'Il nous regarde aussi.', 'Ne lève pas les yeux.'] }, desc: 'Le premier chasseur, figé face au télescope. Il parle sans bouger.' });
+  M('obs_regard_fixe', 'Regard fixe', 'Z', 'observatoire_neant', 'weeping', 'brute', { cat: 'dangereux', fam: 'pierre', icon: '👁️‍🗨️', el: 'ombre', res: { ombre: 0.2, physique: 0.5 }, weak: { sacre: 1.5 }, x: { creepMul: 1.8, stoneMult: 0.3 }, desc: 'Un œil de pierre qui ne bouge que si vous cessez de le regarder.' });
 
   // ===== 13. LA FOIRE AUX PANTINS (rang C · physique) =====
   M('foire_pantin_ficelle', 'Pantin à ficelles', 'C', 'foire_pantins', 'ambusher', 'amb', { fam: 'meca', icon: '🪆', weak: { feu: 1.5 }, x: { hang: 'ceiling', revealRadius: 4.2, blastRadius: 2.2 }, desc: 'Suspendu au chapiteau par ses fils : se laisse tomber.' });

@@ -212,8 +212,8 @@ window.G = window.G || {};
     horror:{ level:0.8, statue:null },
     rewards:{ gold:[301,569], xp:462, lootTier:5, guaranteed:['materiau_forge_rare'], exclusive:['cendre_infernale','maillon_brise'], secret:['maillon_brise'], bossGear:['chaine_du_prince'] } });
 
-  /* ======================= RANG SS ======================= */
-  add({ id:'observatoire_neant', name:'L\'Observatoire du Néant', icon:'🔭', rank:'SS', type:'legendaire', theme:'observatoire_neant', tint:null, element:'ombre',
+  /* ======================= RANG Z ======================= */
+  add({ id:'observatoire_neant', name:'L\'Observatoire du Néant', icon:'🔭', rank:'Z', type:'legendaire', theme:'observatoire_neant', tint:null, element:'ombre',
     ambience:'amb_observatoire', music:'mus_observatoire',
     desc:'Des plates-formes suspendues au-dessus du vide, sous des étoiles qui meurent. Quelque chose regarde par l\'autre bout du télescope.',
     lore:'Le premier Éveillé a construit cet observatoire pour comprendre d\'où venaient les portails. Il a compris. Il n\'est jamais redescendu.',
@@ -269,7 +269,7 @@ window.G = window.G || {};
     ['epreuve_b', 'B', 'skeletonKing', 'L\'Arène du Vétéran', ['cathe_choriste_noye','temple_flagellant','cata_porteur_cercueil'], ['squelette_guerrier','squelette_lanceur','chevalier_maudit'], { min:4, max:6 }, 3],
     ['epreuve_a', 'A', 'frostGiant', 'L\'Arène de l\'Élite', ['asile_camisole','biblio_lecteur_noye','temple_bourreau'], ['chevalier_givre','spectre_givre','archer_givre'], { min:5, max:6 }, 4],
     ['epreuve_s', 'S', 'lich', 'L\'Arène de la Légende', ['necropole_chevalier_fige','jardin_jardinier','asile_infirmiere_sans_visage'], ['spectre_abyssal','chevalier_abyssal','squelette_abyssal'], { min:5, max:7 }, 5],
-    ['epreuve_ss', 'SS', 'demon', 'L\'Arène du Souverain', ['abime_colosse_lave','abime_chainier','obs_marcheur_entre_mondes'], ['chevalier_infernal','diablotin_cracheur','chevalier_neant'], { min:6, max:8 }, 5],
+    ['epreuve_ss', 'Z', 'demon', 'L\'Arène du Souverain', ['abime_colosse_lave','abime_chainier','obs_marcheur_entre_mondes'], ['chevalier_infernal','diablotin_cracheur','chevalier_neant'], { min:6, max:8 }, 5],
   ];
   TRIALS.forEach(([id, rank, boss, name, mons, fb, rooms, lt]) => add({ id, name, icon:'⚖️', rank, type:'epreuve', theme:'arene_epreuves', tint:0xffd700, element:'sacre',
     ambience:'amb_epreuve', music:'mus_epreuve',
@@ -336,12 +336,12 @@ window.G = window.G || {};
     pics_geles: { rank:'B', to:'necropole_glace' }, bibliotheque_interdite: { rank:'B', to:'bibliotheque_engloutie' },
     abysse_sans_fond: { rank:'A', to:'abime_infernal' }, forteresse_celeste: { rank:'A', to:'observatoire_neant' }, necropole_eclipsee: { rank:'A', to:'necropole_glace' },
     coeur_volcan: { rank:'S', to:'abime_infernal' }, coeur_faille: { rank:'S', to:'asile_failles' }, forge_infernale: { rank:'S', to:'abime_infernal' }, chambre_cristal_eteint: { rank:'S', to:'observatoire_neant' },
-    trone_neant: { rank:'SS', to:'observatoire_neant' }, epreuve_souverain: { rank:'SS', to:'epreuve_ss' }, sablier_brise: { rank:'SS', to:'observatoire_neant' },
+    trone_neant: { rank:'Z', to:'observatoire_neant' }, epreuve_souverain: { rank:'Z', to:'epreuve_ss' }, sablier_brise: { rank:'Z', to:'observatoire_neant' },
   };
   try { if (G.RANKS_LEGACY_DUNGEONS) Object.keys(LEGACY).forEach((k) => { if (!G.RANKS_LEGACY_DUNGEONS[k]) G.RANKS_LEGACY_DUNGEONS[k] = LEGACY[k].rank; }); } catch (e) { /* rien */ }
 
   /* ---------- Meta ---------- */
-  const RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const TYPES = {
     classique: 'Donjon standard : salles variées, un boss final.',
     elementaire: 'Dominé par un élément ; dangers environnementaux et ennemis assortis.',

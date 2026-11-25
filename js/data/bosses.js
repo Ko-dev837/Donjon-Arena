@@ -22,7 +22,7 @@ window.G = window.G || {};
     B:  { pv: 14500,  dmg: 50,  sp: 2.2, xp: 270,  gold: [170, 250],  cr: 0.030 },
     A:  { pv: 23000, dmg: 75,  sp: 2.3, xp: 360,  gold: [265, 395],  cr: 0.040 },
     S:  { pv: 42000, dmg: 105, sp: 2.5, xp: 450,  gold: [410, 610],  cr: 0.060 },
-    SS: { pv: 66000, dmg: 140, sp: 2.6, xp: 600,  gold: [600, 900],  cr: 0.100 },
+    Z: { pv: 66000, dmg: 140, sp: 2.6, xp: 600,  gold: [600, 900],  cr: 0.100 },
   };
   const PH = (...rows) => rows.map((r, i) => ({ n: i + 1, at: r[0], attacks: r[1], speedMult: r[2], dmgMult: r[3] || 1, cdMult: r[4] || 1, banner: r[5] || null }));
   const rng3 = (a, b, c) => [a, b, c];
@@ -39,8 +39,8 @@ window.G = window.G || {};
       pv: Math.round(r.pv * pvMul), speed: o.speed || r.sp, dmg: Math.round(r.dmg * (o.dmgMul || 1) * (mini ? 0.85 : 1)),
       xp: Math.round(r.xp * (mini ? 0.4 : 1)), gold: mini ? [Math.round(r.gold[0] * 0.4), Math.round(r.gold[1] * 0.4)] : r.gold.slice(),
       element: o.element || 'physique', resist: o.resist || {}, weak: o.weak || {},
-      attackCd: o.attackCd || (2.9 - ['E', 'D', 'C', 'B', 'A', 'S', 'SS'].indexOf(o.rank) * 0.1),
-      summon: o.summon || 'squelette', phase2At: 0.5, scale: o.scale || 1, music: o.music || 'boss' + Math.min(6, 1 + ['E', 'D', 'C', 'B', 'A', 'S', 'SS'].indexOf(o.rank)),
+      attackCd: o.attackCd || (2.9 - ['E', 'D', 'C', 'B', 'A', 'S', 'Z'].indexOf(o.rank) * 0.1),
+      summon: o.summon || 'squelette', phase2At: 0.5, scale: o.scale || 1, music: o.music || 'boss' + Math.min(6, 1 + ['E', 'D', 'C', 'B', 'A', 'S', 'Z'].indexOf(o.rank)),
       mechanic: 'mech_' + id, mechanicName: o.mech[0], mechanicDesc: o.mech[1], strategy: o.strategy,
       phases: o.phases, miniboss: mini, secret: !!o.secret, legendary: !!o.legendary, trial: !!o.trial,
       intro: o.intro || { zoom: mini ? 1.15 : 1.3, color: 0xff4040, duration: mini ? 2.0 : 2.8, roar: true },
@@ -55,7 +55,7 @@ window.G = window.G || {};
       { id: 'coeur_boss', kind: 'material', chance: mini ? 0.5 : 1, qty: mini ? [1, 1] : [1, 2] },
       { id: 'essence_' + (b.element === 'physique' ? 'brute' : b.element), kind: 'material', chance: 0.6, qty: [1, 3] },
       { id: 'cristal_eveil', kind: 'material', chance: cr, qty: [1, 1], rare: true },
-      { kind: 'item', rarity: o.rank === 'SS' ? 'mythique' : (['S', 'A'].indexOf(o.rank) >= 0 ? 'legendaire' : (['B', 'C'].indexOf(o.rank) >= 0 ? 'epique' : 'rare')), chance: mini ? 0.35 : 0.8 },
+      { kind: 'item', rarity: o.rank === 'Z' ? 'mythique' : (['S', 'A'].indexOf(o.rank) >= 0 ? 'legendaire' : (['B', 'C'].indexOf(o.rank) >= 0 ? 'epique' : 'rare')), chance: mini ? 0.35 : 0.8 },
     ].concat(o.loot || []);
     BOSSES[id] = b;
     return b;
@@ -142,19 +142,19 @@ window.G = window.G || {};
     strategy: "Observez le cristal allumé et détruisez-le avant qu'il s'éteigne ; ne touchez pas aux autres. Chaque phase en ajoute.",
     phases: PH([1, ['spread', 'nova', 'beam_sweep'], 1], [0.6, ['laser_spin', 'ring_gap', 'meteor_rain', 'crystal_shield'], 1.15], [0.3, ['laser_spin', 'beam_sweep', 'meteor_rain', 'blade_grid', 'crystal_shield'], 1.3, 1.1, 0.8, 'Le cristal chante !']),
     loot: [{ id: 'cle_faille', kind: 'material', chance: 0.12, qty: [1, 1], rare: true }, { id: 'eclat_prisme', kind: 'material', chance: 0.8, qty: [2, 4] }] });
-  def('souverain_neant', { name: "L'Architecte du Néant", title: 'Souverain du Trône Vide', rank: 'SS', icon: '🕳️', color: 0x9a5cff, element: 'ombre', legendary: true, resist: { ombre: 0.1 }, weak: { sacre: 1.4 }, summon: 'spectre_neant', speed: 2.6, scale: 1.0, attackCd: 2.2,
+  def('souverain_neant', { name: "L'Architecte du Néant", title: 'Souverain du Trône Vide', rank: 'Z', icon: '🕳️', color: 0x9a5cff, element: 'ombre', legendary: true, resist: { ombre: 0.1 }, weak: { sacre: 1.4 }, summon: 'spectre_neant', speed: 2.6, scale: 1.0, attackCd: 2.2,
     mech: ["Architecture du Néant", "4 phases : (1) piliers de couverture contre ses rayons ; (2) l'arène s'effondre dans le Néant ; (3) il se dédouble et ses reflets frappent ; (4) trois Clés runiques à détruire dans l'ordre avant son Effacement."],
     strategy: "P1 : jouez les piliers. P2 : restez dans la zone sûre qui rétrécit. P3 : repérez le vrai (le reflet meurt en 1 coup). P4 : détruisez les clés 1-2-3 avant la fin du compte à rebours, sinon réfugiez-vous dans les sceaux sûrs.",
     phases: PH([1, ['beam_sweep', 'pillar_summon', 'nova', 'rain'], 1], [0.72, ['laser_spin', 'inverse_wave', 'ring_gap', 'meteor_rain', 'chain_pull'], 1.15, 1.05, 0.9, "L'arène s'effondre !"],
       [0.42, ['clones', 'blade_grid', 'zigzag_rush', 'dark_zone', 'beam_sweep'], 1.3, 1.1, 0.8, "L'Architecte se dédouble !"], [0.18, ['laser_spin', 'meteor_rain', 'stun_roar', 'ally_mark', 'blade_grid', 'inverse_wave'], 1.45, 1.2, 0.7, 'EFFACEMENT IMMINENT !']),
     intro: { zoom: 1.45, color: 0x9a5cff, duration: 3.6, roar: true, text: 'Le Néant prend forme…' },
     loot: [{ id: 'fragment_neant', kind: 'material', chance: 1, qty: [2, 4] }, { kind: 'item', rarity: 'mythique', chance: 0.25 }] });
-  def('juge_souverain', { name: 'Le Juge Souverain', title: "Épreuve du Souverain", rank: 'SS', icon: '⚖️', color: 0xffd700, element: 'sacre', trial: true, resist: { sacre: 0.2 }, weak: { ombre: 1.3 }, summon: 'chevalier_neant', speed: 2.7, dmgMul: 0.9,
+  def('juge_souverain', { name: 'Le Juge Souverain', title: "Épreuve du Souverain", rank: 'Z', icon: '⚖️', color: 0xffd700, element: 'sacre', trial: true, resist: { sacre: 0.2 }, weak: { ombre: 1.3 }, summon: 'chevalier_neant', speed: 2.7, dmgMul: 0.9,
     mech: ['Sentence', "Le Juge adopte une posture de riposte et déclenche une Furie chronométrée : verdict à zéro, couvrez-vous."],
     strategy: "Ne frappez pas pendant la posture dorée. À la fin du compte à rebours, cachez-vous derrière un pilier.",
     phases: PH([1, ['slam', 'blade_grid', 'spread', 'ring_gap'], 1], [0.6, ['beam_sweep', 'pillar_summon', 'zigzag_rush', 'leap_chain'], 1.2], [0.3, ['laser_spin', 'meteor_rain', 'stun_roar', 'pillar_summon', 'inverse_wave'], 1.4, 1.15, 0.75, 'La sentence est prononcée !']),
     loot: [{ id: 'sceau_souverain', kind: 'material', chance: 1, qty: [1, 1] }] });
-  def('chronophage', { name: 'Chronophage', title: 'Le Dévoreur de Temps', rank: 'SS', icon: '⏳', color: 0xffb020, element: 'physique', speed: 2.8, resist: {}, weak: { foudre: 1.3, ombre: 1.3 }, summon: 'spectre_neant', dmgMul: 0.9,
+  def('chronophage', { name: 'Chronophage', title: 'Le Dévoreur de Temps', rank: 'Z', icon: '⏳', color: 0xffb020, element: 'physique', speed: 2.8, resist: {}, weak: { foudre: 1.3, ombre: 1.3 }, summon: 'spectre_neant', dmgMul: 0.9,
     mech: ['Reflets temporels', "Il projette des reflets de lui-même qui frappent en même temps, et sa Furie est chronométrée."],
     strategy: "Éliminez les reflets d'un seul coup ; le vrai Chronophage résiste. Ne le laissez pas atteindre la fin de son sablier.",
     phases: PH([1, ['zigzag_rush', 'clones', 'ring_gap', 'spread'], 1], [0.6, ['clones', 'blade_grid', 'chain_pull', 'zigzag_rush', 'meteor_rain'], 1.2], [0.3, ['clones', 'laser_spin', 'inverse_wave', 'stun_roar', 'meteor_rain'], 1.4, 1.1, 0.75, 'Le sablier se brise !']) });
@@ -194,7 +194,7 @@ window.G = window.G || {};
   def('maitre_forgeron', { name: 'Maître Forgeron', title: 'Marteau de la Forge Infernale', rank: 'S', miniboss: true, icon: '🔨', color: 0xff8a1a, element: 'feu', resist: { feu: 0.1 }, weak: { glace: 1.5 }, summon: 'diablotin',
     mech: ['Fournaise réactive', "Sa posture incandescente renvoie les coups."], strategy: "N'attaquez pas quand il rougeoie.",
     phases: PH([1, ['slam', 'rain', 'fire_wall'], 1], [0.5, ['fire_wall', 'leap_chain', 'meteor_rain'], 1.2]) });
-  def('general_neant', { name: 'Général du Néant', title: 'Lame du Souverain', rank: 'SS', miniboss: true, icon: '⚫', color: 0x9a5cff, element: 'ombre', resist: { ombre: 0.2 }, weak: { sacre: 1.4 }, summon: 'spectre_neant',
+  def('general_neant', { name: 'Général du Néant', title: 'Lame du Souverain', rank: 'Z', miniboss: true, icon: '⚫', color: 0x9a5cff, element: 'ombre', resist: { ombre: 0.2 }, weak: { sacre: 1.4 }, summon: 'spectre_neant',
     mech: ['Prisme du Néant', 'Faiblesse élémentaire changeante.'], strategy: "Suivez la couleur de son aura pour choisir l'élément.",
     phases: PH([1, ['zigzag_rush', 'nova', 'blade_grid'], 1], [0.5, ['laser_spin', 'clones', 'inverse_wave'], 1.2]) });
 
@@ -252,7 +252,7 @@ window.G = window.G || {};
   //   rewards[{id,chance,qty}], gear{...}, cristal, mechOpts (modules G.BossAttacks), mechId
   // ===================================================================
   const bn = (name, line) => '<b>' + name + '</b><br><i>« ' + line + ' »</i>';
-  const RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const MATS = {
     charbon_maudit: ['Charbon maudit', '⚫', 'rare', 'Charbon qui brûle sans chaleur. Arraché au Golem de Grisou.'],
     lanterne_du_mineur: ['Lanterne du mineur', '🏮', 'rare', 'Une lanterne qui éclaire ce qu\'on préférerait ne pas voir.'],
@@ -421,7 +421,7 @@ window.G = window.G || {};
     rewards: [['cendre_infernale', 0.7, [1, 3]], ['maillon_brise', 0.7, [1, 3]], ['coeur_boss', 0.9, [1, 2]]],
     gear: { id: 'chaine_du_prince', slot: 'amulette', name: 'Chaîne du Prince', icon: '⛓️', classes: null, rankReq: 'S', rarity: 'mythique', shares: { force: 0.3, intelligence: 0.3, dmg_feu: 0.25, pvMax: 0.15 }, effect: { id: 'chaine_ardente', name: 'Chaîne ardente', desc: 'Toutes les 4 s, vos coups déclenchent une explosion de feu autour de vous (4× vos dégâts).' } } });
   // 12 --------------------------------------------------------------
-  fin('obs_oeil_qui_regarde', { name: 'L\'Œil', title: 'L\'Œil qui Regarde', rank: 'SS', icon: '👁️', color: 0xb48cff, element: 'ombre', speed: 0.3, scale: 1.0, legendary: true, resist: { ombre: 0.4 }, weak: { sacre: 1.4 }, summon: 'obs_fragment_neant', attackCd: 2.3,
+  fin('obs_oeil_qui_regarde', { name: 'L\'Œil', title: 'L\'Œil qui Regarde', rank: 'Z', icon: '👁️', color: 0xb48cff, element: 'ombre', speed: 0.3, scale: 1.0, legendary: true, resist: { ombre: 0.4 }, weak: { sacre: 1.4 }, summon: 'obs_fragment_neant', attackCd: 2.3,
     lore: 'Ce qui regarde depuis l\'autre côté de tous les portails n\'a ni nom ni visage, seulement une attention. Chaque fois qu\'il cligne, une étoile s\'éteint. Tant qu\'il vous regarde, vous existez à peu près.',
     lines: { intro: 'Je vous regarde.', phase2: 'Une étoile de moins.', phase3: 'Votre ciel s\'éteint.', phase4: 'CLIGNEZ… ET VOUS N\'ÉTIEZ PAS.', death: 'Je… cesse… de regarder.' },
     mech: ['Constellation et oubli', 'Ses paupières le protègent ; il dessine une constellation dans le ciel (un puzzle d\'étoiles à activer dans l\'ordre) et chaque phase éteint un secteur de la salle : l\'oubli y efface.'],
@@ -429,7 +429,7 @@ window.G = window.G || {};
     phases: PH([1, ['oq_gaze', 'oq_comet', 'oq_star_burst'], 1], [0.72, ['oq_gaze', 'oq_comet', 'oq_star_burst', 'oq_iris_nova'], 1.1, 1, 1, bn('L\'Œil qui Regarde', 'Une étoile de moins.')], [0.45, ['oq_gaze', 'oq_comet', 'oq_iris_nova', 'oq_star_burst'], 1.22, 1.08, 0.9, bn('L\'Œil qui Regarde', 'Votre ciel s\'éteint.')], [0.2, ['oq_iris_nova', 'oq_gaze', 'oq_star_burst', 'oq_comet', 'beam_sweep'], 1.4, 1.15, 0.72, bn('L\'Œil qui Regarde', 'CLIGNEZ… ET VOUS N\'ÉTIEZ PAS.')]),
     mechOpts: { constellation: { n: [4, 5, 6, 6], every: 22, armor: 0.4 }, cover: { pillars: 3 } },
     rewards: [['poussiere_d_etoile_morte', 0.8, [1, 3]], ['eclat_du_neant', 0.4, [1, 2]], ['coeur_boss', 1, [1, 3]]],
-    gear: { id: 'lentille_de_l_oeil', slot: 'amulette', name: 'Lentille de l\'Œil', icon: '👁️', classes: null, rankReq: 'SS', rarity: 'mythique', shares: { intelligence: 0.3, critDmg: 0.3, crit: 0.2, cdr: 0.2 }, effect: { id: 'regard_neant', name: 'Regard du néant', desc: 'Toutes les 10 s, votre prochain coup inflige le double de dégâts.' } } });
+    gear: { id: 'lentille_de_l_oeil', slot: 'amulette', name: 'Lentille de l\'Œil', icon: '👁️', classes: null, rankReq: 'Z', rarity: 'mythique', shares: { intelligence: 0.3, critDmg: 0.3, crit: 0.2, cdr: 0.2 }, effect: { id: 'regard_neant', name: 'Regard du néant', desc: 'Toutes les 10 s, votre prochain coup inflige le double de dégâts.' } } });
   // 13 --------------------------------------------------------------
   fin('foire_grand_marionnettiste', { name: 'Maître Fil', title: 'Le Grand Marionnettiste', rank: 'C', icon: '🎪', color: 0xffd23a, element: 'physique', speed: 2.3, weak: { feu: 1.3, foudre: 1.2 }, summon: 'foire_pantin_ficelle',
     lore: 'Il tire les ficelles de toute la foire : les clowns, les chevaux de bois, les rires. Il en cherchait une dernière, la vôtre. Coupez ses fils et il tombera comme les autres : en s\'excusant.',
@@ -455,7 +455,7 @@ window.G = window.G || {};
   mini('necropole_bourreau_givre', { name: 'Bourreau', title: 'Le Bourreau de Givre', rank: 'A', icon: '🪓', color: 0x4ac8ff, element: 'glace', summon: 'necropole_chevalier_fige', lore: 'Il exécute depuis l\'hiver. Il n\'a jamais raté un coup.', lines: { intro: 'À genoux.', phase2: 'Tête haute, alors.', death: 'Hache… émoussée.' }, mech: ['Garde frontale', 'Frappez-le de dos.'], strategy: 'Contournez.', atk: [['mn_axe', 'slam'], ['mn_axe', 'slam', 'nova']], mechOpts: { front: { half: 1.4 } }, rewards: [['givre_eternel', 0.4, [1, 1]]] });
   mini('jardin_jardinier_chef', { name: 'Jardinier-Chef', title: 'Le Jardinier-Chef', rank: 'A', icon: '✂️', color: 0x9aff66, element: 'poison', summon: 'jardin_jardinier', lore: 'Il taille. Il taille tout.', lines: { intro: 'Je dois… tailler.', phase2: 'Trop de branches.', death: 'Plus rien… à tailler.' }, mech: ['Mares de sève', 'Il se soigne dans la sève.'], strategy: 'Éloignez-le des mares.', atk: [['mn_shears', 'poison_pools'], ['mn_shears', 'poison_pools', 'spread']], mechOpts: { pools: { heal: 0.01 } }, rewards: [['graine_de_chair', 0.5, [1, 2]]] });
   mini('abime_bourreau_chaines', { name: 'Chaînier', title: 'Le Bourreau des Chaînes', rank: 'S', icon: '⛓️', color: 0xff5a1a, element: 'feu', summon: 'abime_diablotin_braise', lore: 'Il enchaîne. Il ne sait plus comment défaire.', lines: { intro: 'Les chaînes vous attendent.', phase2: 'Plus serré.', death: 'Chaîne… rompue.' }, mech: ['Riposte de fer', 'Il riposte parfois.'], strategy: 'Frappez entre les postures.', atk: [['pc_chain_whip', 'slam'], ['pc_chain_whip', 'slam', 'pc_fissure']], mechOpts: { riposte: { every: 10, dur: 3 } }, rewards: [['maillon_brise', 0.5, [1, 2]]] });
-  mini('obs_horloger_cosmique', { name: 'Horloger', title: 'L\'Horloger Cosmique', rank: 'SS', icon: '🕰️', color: 0xffd23a, element: 'ombre', summon: 'obs_fragment_neant', lore: 'Il remonte les étoiles. Elles sont en retard.', lines: { intro: 'Vous êtes en retard.', phase2: 'Trop tard, maintenant.', death: 'Le temps… s\'arrête.' }, mech: ['Reflets du temps', 'Des échos temporels le rejoignent.'], strategy: 'Frappez l\'original.', atk: [['mn_clock', 'nova'], ['mn_clock', 'ring_gap', 'nova']], mechOpts: { echoes: { n: [2, 3], every: 18 } }, rewards: [['poussiere_d_etoile_morte', 0.5, [1, 2]]] });
+  mini('obs_horloger_cosmique', { name: 'Horloger', title: 'L\'Horloger Cosmique', rank: 'Z', icon: '🕰️', color: 0xffd23a, element: 'ombre', summon: 'obs_fragment_neant', lore: 'Il remonte les étoiles. Elles sont en retard.', lines: { intro: 'Vous êtes en retard.', phase2: 'Trop tard, maintenant.', death: 'Le temps… s\'arrête.' }, mech: ['Reflets du temps', 'Des échos temporels le rejoignent.'], strategy: 'Frappez l\'original.', atk: [['mn_clock', 'nova'], ['mn_clock', 'ring_gap', 'nova']], mechOpts: { echoes: { n: [2, 3], every: 18 } }, rewards: [['poussiere_d_etoile_morte', 0.5, [1, 2]]] });
   mini('foire_homme_canon', { name: 'Homme-Canon', title: 'L\'Homme-Canon', rank: 'C', icon: '💥', color: 0xffd23a, element: 'physique', summon: 'foire_clown_triste', lore: 'Il a été tiré trop de fois. Il tire à son tour.', lines: { intro: 'Pas de filet ?!', phase2: 'Feu à volonté !', death: 'Boum…' }, mech: ['Bouclier de canon', 'Garde frontale.'], strategy: 'Contournez le canon.', atk: [['mn_cannon', 'charge'], ['mn_cannon', 'charge', 'spread']], mechOpts: { front: { half: 1.3 } }, rewards: [['ticket_de_foire', 0.5, [1, 2]]] });
 
   // ---------- adds de mécaniques v5 ----------

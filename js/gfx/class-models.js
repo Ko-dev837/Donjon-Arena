@@ -44,7 +44,7 @@ window.G = window.G || {};
   }
   const RANK_IDS = ['E', 'D', 'C', 'B', 'A', 'S'];
   const RANK_COLORS = [0x9aa3ad, 0x4fd17a, 0x3fa9ff, 0xb44dff, 0xff8a1a, 0xff3d3d];
-  const rankIdx = (r) => { const i = RANK_IDS.indexOf(String(r || 'E').toUpperCase()); return i < 0 ? (String(r).toUpperCase() === 'SS' ? 5 : 0) : i; };
+  const rankIdx = (r) => { const i = RANK_IDS.indexOf(String(r || 'E').toUpperCase()); return i < 0 ? (String(r).toUpperCase() === 'Z' ? 5 : 0) : i; };
 
   // ------------------------------------------------------------------
   // Géométries unitaires partagées

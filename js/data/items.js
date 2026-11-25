@@ -27,7 +27,7 @@
    ===================================================================== */
 window.G = window.G || {};
 (() => {
-  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
 
   // ------------------------------------------------------------------
   // RARETÉS (couleurs : CONTRACT-V3 §10)
@@ -51,7 +51,7 @@ window.G = window.G || {};
     B:  [42, 36, 17, 4.5, 0.5],
     A:  [30, 36, 24, 8.5, 1.5],
     S:  [20, 33, 30, 14, 3],
-    SS: [12, 28, 34, 20, 6],
+    Z: [12, 28, 34, 20, 6],
   };
 
   // ------------------------------------------------------------------
@@ -149,7 +149,7 @@ window.G = window.G || {};
 
   // ------------------------------------------------------------------
   // BASES D'OBJETS (génériques) — parts du budget de base (somme = 1)
-  //   tier 0 : rangs E-D | tier 1 : rangs C-B | tier 2 : rangs A-S-SS
+  //   tier 0 : rangs E-D | tier 1 : rangs C-B | tier 2 : rangs A-S-Z
   // ------------------------------------------------------------------
   const bases = {};
   function B(id, slot, tier, name, icon, shares, classes) {

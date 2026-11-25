@@ -7,14 +7,14 @@ window.G = window.G || {};
  * ===================================================================== */
 (() => {
   const G = window.G;
-  const ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
-  const RCOL = { E: '#9aa3ad', D: '#4fd17a', C: '#3fa9ff', B: '#b44dff', A: '#ff8a1a', S: '#ff3d3d', SS: '#ffd700' };
-  const RNAME = { E: 'Rang E', D: 'Rang D', C: 'Rang C', B: 'Rang B', A: 'Rang A', S: 'Rang S', SS: 'Rang Souverain' };
+  const ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
+  const RCOL = { E: '#9aa3ad', D: '#4fd17a', C: '#3fa9ff', B: '#b44dff', A: '#ff8a1a', S: '#ff3d3d', Z: '#ffd700' };
+  const RNAME = { E: 'Rang E', D: 'Rang D', C: 'Rang C', B: 'Rang B', A: 'Rang A', S: 'Rang S', Z: 'Rang Z' };
   const RARS = ['commun', 'rare', 'epique', 'legendaire', 'mythique'];
   const RAR_COL = { commun: '#b8c0cc', rare: '#3fa9ff', epique: '#b44dff', legendaire: '#ffb020', mythique: '#ff3d6e', secret: '#00ffd0' };
   const RAR_NAME = { commun: 'Commun', rare: 'Rare', epique: 'Épique', legendaire: 'Légendaire', mythique: 'Mythique' };
-  const RAR_BY_RANK = { E: ['commun', 'rare'], D: ['commun', 'rare'], C: ['rare', 'epique'], B: ['rare', 'epique', 'legendaire'], A: ['epique', 'legendaire'], S: ['epique', 'legendaire', 'mythique'], SS: ['legendaire', 'mythique'] };
-  const FALLBACK_POWER = { E: 0, D: 480, C: 600, B: 820, A: 1100, S: 1650, SS: 2150 };
+  const RAR_BY_RANK = { E: ['commun', 'rare'], D: ['commun', 'rare'], C: ['rare', 'epique'], B: ['rare', 'epique', 'legendaire'], A: ['epique', 'legendaire'], S: ['epique', 'legendaire', 'mythique'], Z: ['legendaire', 'mythique'] };
+  const FALLBACK_POWER = { E: 0, D: 480, C: 600, B: 820, A: 1100, S: 1650, Z: 2150 };
   const TYPES = {
     normal: { label: 'Portail', accent: null },
     rouge: { label: 'Faille rouge', accent: '#e0102e' },

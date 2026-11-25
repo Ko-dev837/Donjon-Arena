@@ -243,11 +243,11 @@ window.G = window.G || {};
   O.applyGrants = applyGrants;
 
   // ---- classement : tous les joueurs connectés avec un compte (pseudo, classe, rang, niveau — jamais l'email) ----
-  const RANK_SCORE = { E: 0, D: 1, C: 2, B: 3, A: 4, S: 5 };
+  const RANK_SCORE = { E: 0, D: 1, C: 2, B: 3, A: 4, S: 5, Z: 6 };
   O.leaderboard = async function (limit) {
     if (O.mode !== 'firebase' || !O.user || !fb) return null;
     const snap = await fb.fs.collection('users').orderBy('niveau', 'desc').limit(Math.min(300, limit || 200)).get();
-    const list = snap.docs.map(d => { const x = d.data() || {}; return { uid: d.id, name: cleanName(x.name || 'Joueur'), classe: x.classe || null, rank: RANK_SCORE[x.rank] != null ? x.rank : 'E', niveau: num(x.niveau, 1), guildId: x.guildId || null }; });
+    const list = snap.docs.map(d => { const x = d.data() || {}; return { uid: d.id, name: cleanName(x.name || 'Joueur'), classe: x.classe || null, rank: x.rank === 'SS' ? 'Z' : (RANK_SCORE[x.rank] != null ? x.rank : 'E'), niveau: num(x.niveau, 1), guildId: x.guildId || null }; });
     list.sort((a, b) => (RANK_SCORE[b.rank] - RANK_SCORE[a.rank]) || (b.niveau - a.niveau) || a.name.localeCompare(b.name, 'fr'));
     list.forEach((p, i) => { p.pos = i + 1; });
     return list;

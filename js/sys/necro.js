@@ -52,7 +52,7 @@ window.G = window.G || {};
 
   const rnd = () => ((G.rng && typeof G.rng.float === 'function') ? G.rng.float() : Math.random());
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-  const rankIdx = (r) => { const i = RANKS.indexOf(String(r || 'E').toUpperCase()); return i < 0 ? (String(r).toUpperCase() === 'SS' ? 5 : 0) : i; };
+  const rankIdx = (r) => { const i = RANKS.indexOf(String(r || 'E').toUpperCase()); return i < 0 ? (String(r).toUpperCase() === 'Z' ? 5 : 0) : i; };
   const hasDOM = () => typeof document !== 'undefined' && document.body;
   const V3 = (x, y, z) => new window.THREE.Vector3(x, y, z);
   const isNecro = (p) => !!p && p.classe === CLS;

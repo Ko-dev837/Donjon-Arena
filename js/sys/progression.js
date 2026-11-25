@@ -1,5 +1,5 @@
 /* =====================================================================
-   js/sys/progression.js — RÔLE 2 : stats, rangs E→SS, progression, succès, animation de promotion
+   js/sys/progression.js — RÔLE 2 : stats, rangs E→Z, progression, succès, animation de promotion
    Expose : G.Stats, G.Ranks, G.Progress (+ panneaux 'heros' et 'succes').
    Dépendances à l'EXÉCUTION seulement (défensif) : G.CLASSES, G.DATA, G.hooks, G.bus, G.game, G.UI, G.sfx, G.VFX, G.Portals.
    ===================================================================== */
@@ -12,7 +12,7 @@ window.G = window.G || {};
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const r2 = (v) => Math.round(v * 100) / 100;
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const ATTRS = ['force', 'vitesse', 'defense', 'vitalite', 'intelligence'];
   const ELEMENTS = ['physique', 'feu', 'glace', 'foudre', 'ombre', 'sacre', 'poison'];
   const curProfile = () => (G.game && G.game.profile) || null;
@@ -1060,7 +1060,7 @@ window.G = window.G || {};
       if (pending) h += '<button type="button" class="ds-btn ds-btn--gold ds-btn--lg ds-btn--block rk-go" data-rk="promote"><span class="ds-btn__icon">' + ico('star', 18) + '</span>Valider la promotion</button>';
       else if (trial) h += '<button type="button" class="ds-btn ds-btn--gold ds-btn--lg ds-btn--block rk-go" data-rk="trial"><span class="ds-btn__icon">' + ico('sword', 18) + '</span>Lancer l’épreuve de promotion</button>';
       else h += '<div class="rk-sub" style="text-align:center">Remplissez toutes les conditions pour débloquer l’épreuve.</div>';
-    } else h += '<div class="rk-sub">Vous avez atteint le sommet : le Rang Souverain.</div>';
+    } else h += '<div class="rk-sub">Vous avez atteint le sommet : le Rang Z.</div>';
     h += '<div class="rk-msg" data-rk-msg></div></div>';
 
     // --- attributs

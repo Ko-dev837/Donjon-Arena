@@ -49,8 +49,8 @@ window.G = window.G || {};
     sacre:    { main: 0xffd95a, hi: 0xffffff, lo: 0xffa820, dark: 0x7a5a10, cols: [0xffffff, 0xfff0a0, 0xffd95a, 0xffb020] },
     poison:   { main: 0x5ee03a, hi: 0xc8ff7a, lo: 0x1f7a1e, dark: 0x143a12, cols: [0x2a9a1e, 0x5ee03a, 0xa6ff5a] },
   };
-  const RC = { E: 0x9aa3ad, D: 0x4fd17a, C: 0x3fa9ff, B: 0xb44dff, A: 0xff8a1a, S: 0xff3d3d, SS: 0xffd700 };
-  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RC = { E: 0x9aa3ad, D: 0x4fd17a, C: 0x3fa9ff, B: 0xb44dff, A: 0xff8a1a, S: 0xff3d3d, Z: 0xffd700 };
+  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const colors = {};
   for (const k in PAL) colors[k] = PAL[k].main;
 

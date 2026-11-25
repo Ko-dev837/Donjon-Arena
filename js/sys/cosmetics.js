@@ -10,7 +10,7 @@ window.G = window.G || {};
   'use strict';
   const RARITY_NAMES = { commun: 'Commun', rare: 'Rare', epique: 'Épique', legendaire: 'Légendaire', mythique: 'Mythique', secret: 'Secret' };
   const RARITY_HEX = { commun: '#b8c0cc', rare: '#3fa9ff', epique: '#b44dff', legendaire: '#ffb020', mythique: '#ff3d6e', secret: '#00ffd0' };
-  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const AURA_LEVEL = { commun: 1, rare: 2, epique: 3, legendaire: 4, mythique: 5, secret: 5 };
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -149,7 +149,7 @@ window.G = window.G || {};
     ['ombre', 'Ombre', 'epique', 0x8b6bff, 3, 'rank:B'],
     ['sang', 'Sang', 'epique', 0xff3d6e, 3, 'ach:red_1'],
     ['or', 'Or royal', 'legendaire', 0xffc94a, 4, 'rank:A'],
-    ['souverain', 'Souverain', 'mythique', 0xffd700, 5, 'rank:SS'],
+    ['souverain', 'Souverain', 'mythique', 0xffd700, 5, 'rank:Z'],
     ['neant', 'Néant', 'secret', 0x00ffd0, 5, 'ach:necro'],
   ].map((r) => ({ id: r[0], key: 'a:' + r[0], kind: 'aura', name: r[1], rarity: r[2], color: r[3], level: r[4], cond: parseCond(r[5]) }));
   // [id, nom, rareté, c1, c2, forme, animé, condition]
@@ -165,7 +165,7 @@ window.G = window.G || {};
     ['chasseur', 'Chasseur de boss', 'epique', '#ff3d6e', '#b44dff', 'round', 0, 'ach:boss_25'],
     ['elite', 'Élite', 'legendaire', '#ff8a1a', '#ffc94a', 'hex', 1, 'rank:A'],
     ['legende', 'Légende', 'mythique', '#ff3d3d', '#ff9a3d', 'hex', 1, 'rank:S'],
-    ['souverain', 'Souverain', 'mythique', '#ffd700', '#fff4c0', 'hex', 1, 'rank:SS'],
+    ['souverain', 'Souverain', 'mythique', '#ffd700', '#fff4c0', 'hex', 1, 'rank:Z'],
     ['neant', 'Néant', 'secret', '#00ffd0', '#8b6bff', 'hex', 1, 'ach:necro'],
   ].map((r) => ({ id: r[0], key: 'f:' + r[0], kind: 'frame', name: r[1], rarity: r[2], c1: r[3], c2: r[4], shape: r[5], anim: !!r[6], cond: parseCond(r[7]) }));
   // [id, nom, rareté, dégradé, condition]
@@ -180,7 +180,7 @@ window.G = window.G || {};
     ['breche', 'Brèche rouge', 'epique', 'linear-gradient(135deg,#1a0509,#7a1020 55%,#ff3d6e)', 'ach:red_1'],
     ['couronne', 'Couronne dorée', 'legendaire', 'linear-gradient(135deg,#2a1d05,#a8741a 55%,#ffd24a)', 'boss:40'],
     ['legende', 'Légende', 'mythique', 'linear-gradient(135deg,#200808,#ff3d3d 55%,#ffd24a)', 'rank:S'],
-    ['souverain', 'Souverain', 'mythique', 'linear-gradient(120deg,#1a1405,#ffd700 45%,#fff4c0 55%,#a8741a)', 'rank:SS'],
+    ['souverain', 'Souverain', 'mythique', 'linear-gradient(120deg,#1a1405,#ffd700 45%,#fff4c0 55%,#a8741a)', 'rank:Z'],
     ['neant', 'Néant', 'secret', 'radial-gradient(circle at 50% 120%,#00ffd0 0,#0b3a33 35%,#000 75%)', 'ach:necro'],
   ].map((r) => ({ id: r[0], key: 'b:' + r[0], kind: 'banner', name: r[1], rarity: r[2], bg: r[3], cond: parseCond(r[4]) }));
 

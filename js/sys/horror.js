@@ -12,7 +12,7 @@ window.G = window.G || {};
   if (G.Horror && G.Horror.__v5) return;
 
   const HALF = 14;
-  const RANK_IDX = { E: 0, D: 1, C: 2, B: 3, A: 4, S: 5, SS: 6, SSS: 6 };
+  const RANK_IDX = { E: 0, D: 1, C: 2, B: 3, A: 4, S: 5, Z: 6, SSS: 6 };
   const LS_KEY = 'donjon-arena-horror';
   const SOUND_FALLBACK = { porte: 'door', chute: 'slam' };   // G.sfx si G.Audio est absent
 

@@ -110,10 +110,10 @@ window.G = window.G || {};
       color: cssColor(c3.color != null ? c3.color : c2.color), desc: c3.desc || c2.desc || '', bonus: c2.bonus || {}, evolutions: Array.isArray(c3.evolutions) ? c3.evolutions : [],
     };
   }
-  const RANK_COLORS = { E: '#9aa3ad', D: '#4fd17a', C: '#3fa9ff', B: '#b44dff', A: '#ff8a1a', S: '#ff3d3d', SS: '#ffd700' };
+  const RANK_COLORS = { E: '#9aa3ad', D: '#4fd17a', C: '#3fa9ff', B: '#b44dff', A: '#ff8a1a', S: '#ff3d3d', Z: '#ffd700' };
   const RARITY_COLORS = { commun: '#b8c0cc', rare: '#3fa9ff', epique: '#b44dff', legendaire: '#ffb020', mythique: '#ff3d6e', secret: '#00ffd0' };
   const RARITY_NAMES = { commun: 'Commun', rare: 'Rare', epique: 'Épique', legendaire: 'Légendaire', mythique: 'Mythique', secret: 'Secret' };
-  const rankOrder = () => (G.Ranks && Array.isArray(G.Ranks.order) && G.Ranks.order.length ? G.Ranks.order : ['E', 'D', 'C', 'B', 'A', 'S', 'SS']);
+  const rankOrder = () => (G.Ranks && Array.isArray(G.Ranks.order) && G.Ranks.order.length ? G.Ranks.order : ['E', 'D', 'C', 'B', 'A', 'S', 'Z']);
   function rankIndex(r) { const i = rankOrder().indexOf(r); return i < 0 ? 0 : i; }
   function rankDef(id) {
     const arr = Array.isArray(G.RANKS) ? G.RANKS : (G.RANKS && typeof G.RANKS === 'object' ? Object.values(G.RANKS) : []);
@@ -2285,7 +2285,7 @@ window.G = window.G || {};
   // ==================================================================
   function tutoPages() {
     const touch = isTouch();
-    const rk = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'].map(r => rankBadgeHTML(r, 'md')).join('');
+    const rk = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'].map(r => rankBadgeHTML(r, 'md')).join('');
     return [
       { icon: 'joystick', title: 'Se déplacer', kicker: 'Les bases',
         art: `<div class="tu-art tu-move"><div class="tu-joy"><i class="tu-knob"></i><i class="tu-arr a1"></i><i class="tu-arr a2"></i><i class="tu-arr a3"></i><i class="tu-arr a4"></i></div><div class="tu-keys"><span class="ds-kbd k-z">Z</span><span class="ds-kbd">Q</span><span class="ds-kbd">S</span><span class="ds-kbd">D</span></div></div>`,
@@ -2301,7 +2301,7 @@ window.G = window.G || {};
         text: 'L’ultime se <b>charge en infligeant des dégâts</b>. Quand l’anneau est plein et que le bouton brille, déclenche-le au cœur de la mêlée.' },
       { icon: 'portal', title: 'Rangs & portails', kicker: 'Progression',
         art: `<div class="tu-art tu-ranks"><div class="tu-rk">${rk}</div><div class="tu-portal">${ico('portal', 42)}</div></div>`,
-        text: 'Les portails ont un <b>rang</b> (E → SS). Tu ne peux entrer que dans ceux de ton rang. Remplis les conditions puis réussis une <b>épreuve de promotion</b> pour monter d’un rang.' },
+        text: 'Les portails ont un <b>rang</b> (E → Z). Tu ne peux entrer que dans ceux de ton rang. Remplis les conditions puis réussis une <b>épreuve de promotion</b> pour monter d’un rang.' },
       { icon: 'bag', title: 'Équipement, dons & compétences', kicker: 'Personnalisation',
         art: `<div class="tu-art tu-gear"><div class="tu-tile" style="--c:var(--r-epique)">${ico('shirt', 26)}<small>Objets</small></div><div class="tu-tile" style="--c:var(--ds-accent-2)">${ico('rune', 26)}<small>Dons</small></div><div class="tu-tile" style="--c:var(--ds-accent)">${ico('sparkles', 26)}<small>Compétences</small></div></div>`,
         text: 'Au camp : équipe le butin dans l’<b>Inventaire</b>, choisis tes <b>Dons</b> (synergies entre éléments) et dépense tes points dans l’arbre de <b>Compétences</b>. La <b>Forge</b> améliore tes armes.' },

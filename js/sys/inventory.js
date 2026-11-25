@@ -18,7 +18,7 @@
    ===================================================================== */
 window.G = window.G || {};
 (() => {
-  const RO = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RO = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const SLOT_IDS = ['arme', 'armure', 'casque', 'bottes', 'anneau', 'amulette'];
   const rIdx = (r) => Math.max(0, RO.indexOf(r));
   const I = () => G.ITEMS;
@@ -713,7 +713,7 @@ window.G = window.G || {};
     try { const Ic = G.Icons; if (Ic && Ic.svg && (!Ic.has || Ic.has(name))) return Ic.svg(name, { size: size || 18, cls: cls || '' }) || ''; } catch (_) {}
     return '';
   };
-  const FALLBACK_CSS = `:where(:root){--ds-bg-0:#060912;--ds-bg-1:#0b1122;--ds-bg-2:#111a33;--ds-bg-3:#18233f;--ds-glass:rgba(13,20,40,.78);--ds-glass-strong:rgba(9,14,30,.92);--ds-line:rgba(130,180,255,.16);--ds-line-strong:rgba(130,200,255,.36);--ds-text:#e8f0ff;--ds-text-2:#a9b8d6;--ds-text-3:#6f7fa3;--ds-accent:#46d4ff;--ds-accent-2:#8b6bff;--ds-gold:#ffc94a;--ds-success:#39e08c;--ds-danger:#ff4d6a;--ds-warning:#ffb547;--r-commun:#b8c0cc;--r-rare:#3fa9ff;--r-epique:#b44dff;--r-legendaire:#ffb020;--r-mythique:#ff3d6e;--r-secret:#00ffd0;--rk-E:#9aa3ad;--rk-D:#4fd17a;--rk-C:#3fa9ff;--rk-B:#b44dff;--rk-A:#ff8a1a;--rk-S:#ff3d3d;--rk-SS:#ffd700;--ds-font-display:'Chakra Petch','Lilita One',sans-serif;--ds-font-body:'Nunito',sans-serif;--ds-r-sm:6px;--ds-r-md:10px;--ds-r-lg:16px;--ds-cut:10px;--ds-shadow-1:0 4px 14px rgba(0,0,0,.35);--ds-shadow-2:0 12px 40px rgba(0,0,0,.55);--ds-fast:120ms;--ds-med:220ms;--ds-slow:380ms;--ds-ease:cubic-bezier(.2,.8,.2,1)}
+  const FALLBACK_CSS = `:where(:root){--ds-bg-0:#060912;--ds-bg-1:#0b1122;--ds-bg-2:#111a33;--ds-bg-3:#18233f;--ds-glass:rgba(13,20,40,.78);--ds-glass-strong:rgba(9,14,30,.92);--ds-line:rgba(130,180,255,.16);--ds-line-strong:rgba(130,200,255,.36);--ds-text:#e8f0ff;--ds-text-2:#a9b8d6;--ds-text-3:#6f7fa3;--ds-accent:#46d4ff;--ds-accent-2:#8b6bff;--ds-gold:#ffc94a;--ds-success:#39e08c;--ds-danger:#ff4d6a;--ds-warning:#ffb547;--r-commun:#b8c0cc;--r-rare:#3fa9ff;--r-epique:#b44dff;--r-legendaire:#ffb020;--r-mythique:#ff3d6e;--r-secret:#00ffd0;--rk-E:#9aa3ad;--rk-D:#4fd17a;--rk-C:#3fa9ff;--rk-B:#b44dff;--rk-A:#ff8a1a;--rk-S:#ff3d3d;--rk-Z:#ffd700;--ds-font-display:'Chakra Petch','Lilita One',sans-serif;--ds-font-body:'Nunito',sans-serif;--ds-r-sm:6px;--ds-r-md:10px;--ds-r-lg:16px;--ds-cut:10px;--ds-shadow-1:0 4px 14px rgba(0,0,0,.35);--ds-shadow-2:0 12px 40px rgba(0,0,0,.55);--ds-fast:120ms;--ds-med:220ms;--ds-slow:380ms;--ds-ease:cubic-bezier(.2,.8,.2,1)}
 :where(.ds-btn){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--ds-line-strong);border-radius:var(--ds-r-md);background:var(--ds-glass);color:var(--ds-text);font:700 14px var(--ds-font-display);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
 :where(.ds-btn--primary){background:linear-gradient(180deg,#6fe0ff,#2aa8dc);color:#04121c;border-color:transparent}
 :where(.ds-btn--gold){background:linear-gradient(180deg,#ffd978,#e0a21c);color:#2a1a00;border-color:transparent}
@@ -741,7 +741,7 @@ window.G = window.G || {};
 :where(.ds-badge--danger){color:var(--ds-danger);border-color:rgba(255,77,106,.4);background:rgba(255,77,106,.1)}
 :where(.ds-chip){display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border-radius:99px;border:1px solid var(--ds-line);background:rgba(130,180,255,.06);color:var(--ds-text-2);font:700 12px var(--ds-font-body);cursor:pointer}
 :where(.ds-rank){display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 4px;border:2px solid var(--rk,#9aa3ad);border-radius:6px;color:var(--rk,#9aa3ad);font:700 13px var(--ds-font-display);background:rgba(0,0,0,.4)}
-:where(.ds-rank[data-rank=E]){--rk:var(--rk-E)}:where(.ds-rank[data-rank=D]){--rk:var(--rk-D)}:where(.ds-rank[data-rank=C]){--rk:var(--rk-C)}:where(.ds-rank[data-rank=B]){--rk:var(--rk-B)}:where(.ds-rank[data-rank=A]){--rk:var(--rk-A)}:where(.ds-rank[data-rank=S]){--rk:var(--rk-S)}:where(.ds-rank[data-rank=SS]){--rk:var(--rk-SS)}
+:where(.ds-rank[data-rank=E]){--rk:var(--rk-E)}:where(.ds-rank[data-rank=D]){--rk:var(--rk-D)}:where(.ds-rank[data-rank=C]){--rk:var(--rk-C)}:where(.ds-rank[data-rank=B]){--rk:var(--rk-B)}:where(.ds-rank[data-rank=A]){--rk:var(--rk-A)}:where(.ds-rank[data-rank=S]){--rk:var(--rk-S)}:where(.ds-rank[data-rank=Z]){--rk:var(--rk-Z)}
 :where(.ds-rank--sm){min-width:20px;height:20px;font-size:11px}
 :where(.ds-bar){height:8px;border-radius:99px;background:rgba(0,0,0,.45);overflow:hidden;border:1px solid var(--ds-line)}
 :where(.ds-bar__fill){display:block;height:100%;background:linear-gradient(90deg,#2aa8dc,#46d4ff)}
@@ -765,7 +765,7 @@ window.G = window.G || {};
   }
   G.__pcUi = { ico, dsFallback };
   const SLOT_ICO = { arme: 'sword', armure: 'shield', casque: 'crown', bottes: 'arrow-up', anneau: 'gem', amulette: 'rune' };
-  const RANK_COL = { E: '#9aa3ad', D: '#4fd17a', C: '#3fa9ff', B: '#b44dff', A: '#ff8a1a', S: '#ff3d3d', SS: '#ffd700' };
+  const RANK_COL = { E: '#9aa3ad', D: '#4fd17a', C: '#3fa9ff', B: '#b44dff', A: '#ff8a1a', S: '#ff3d3d', Z: '#ffd700' };
   const SEEN = new Set();                 // objets « nouveaux » déjà consultés (interface seulement)
   const T_LOAD = Date.now();
   const isNewItem = (it) => !SEEN.has(it.uid) && (it.born || 0) >= T_LOAD - 1500 && !it.locked;

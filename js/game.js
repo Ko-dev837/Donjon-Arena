@@ -101,7 +101,7 @@ window.G = window.G || {};
   const EL_CSS = { physique: '#ffffff', feu: '#ff9a3c', glace: '#8fe3ff', foudre: '#ffe45c', ombre: '#c08bff', sacre: '#fff3a0', poison: '#8cf06a' };
   const EL_HEX = { physique: 0xeef4ff, feu: 0xff8a2a, glace: 0x9fe6ff, foudre: 0xffe45c, ombre: 0x9a5cff, sacre: 0xfff0a0, poison: 0x7bd14a };
   const EL_NAME = { physique: 'Physique', feu: 'Feu', glace: 'Glace', foudre: 'Foudre', ombre: 'Ombre', sacre: 'Sacré', poison: 'Poison' };
-  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'SS'];
+  const RANK_ORDER = ['E', 'D', 'C', 'B', 'A', 'S', 'Z'];
   const rankIdx = r => Math.max(0, RANK_ORDER.indexOf(r));
   const V2_RANKS = ['E', 'D', 'C', 'B', 'A', 'S'];
   const RARITY_HEX = { commun: 0xb8c0cc, rare: 0x3fa9ff, epique: 0xb44dff, legendaire: 0xffb020, mythique: 0xff3d6e, secret: 0x00ffd0 };
@@ -346,6 +346,10 @@ window.G = window.G || {};
     const wasV2 = !(num(o.version, 2) >= 3);
     const handled = { version: 1, nom: 1, classe: 1, niveau: 1, xp: 1, gold: 1, weapons: 1, potions: 1, cleared: 1, stats: 1 };
     Object.keys(o).forEach(k => { if (!handled[k]) p[k] = o[k]; });
+    // ancien rang « SS » renommé « Z »
+    if (p.rank === 'SS') p.rank = 'Z';
+    if (p.trials && typeof p.trials === 'object' && p.trials.SS !== undefined) { if (p.trials.Z === undefined) p.trials.Z = p.trials.SS; delete p.trials.SS; }
+    if (p.highestRank === 'SS') p.highestRank = 'Z';
     if (!classDefExists(p.classe) && classIds().length) p.classe = classIds()[0];
     p.niveau = clamp(Math.floor(num(o.niveau, 1)), 1, maxLevel());
     p.xp = Math.max(0, num(o.xp, 0));
