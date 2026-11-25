@@ -2,7 +2,7 @@
    - page (index.html) : réseau d'abord, cache si hors ligne
    - scripts, styles, icônes (versionnés ?v=) et three.js : cache d'abord
    - Firebase / Google : jamais mis en cache (connexion, base de données temps réel) */
-const CACHE = 'donjon-arena-v20261125g';
+const CACHE = 'donjon-arena-v20261125h';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

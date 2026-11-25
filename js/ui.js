@@ -718,13 +718,114 @@ window.G = window.G || {};
     return b ? String(b) : '';
   }
 
+  // ---- guide « Comment ça marche ? » de chaque page du camp (ouvert la 1re fois, puis via le bouton ?) ----
+  const KEY = (a) => { try { return G.Keys && G.Keys.labelOf ? G.Keys.labelOf(a) : a; } catch (_) { return a; } };
+  const K = (a) => '<span class="ds-kbd">' + esc(KEY(a)) + '</span>';
+  const GUIDES = {
+    portails: () => [
+      'Un <b>portail</b> = un donjon. Clique sur un portail puis sur <b>Entrer</b> pour lancer la partie.',
+      'La lettre (E, D, C, B, A, S) est la <b>difficulté</b>. Tu ne peux entrer que dans les portails de <b>ton rang</b>.',
+      'En donjon : déplace-toi avec ' + K('up') + K('left') + K('down') + K('right') + ', attaque avec ' + K('cast1') + ', sorts ' + K('cast2') + ' ' + K('cast3') + ', ultime ' + K('super') + ', esquive ' + K('dash') + '.',
+      'Vide chaque salle pour ouvrir la suivante, bats le <b>boss</b> à la fin : tu gagnes de l\u2019XP, de l\u2019or et des objets.',
+    ],
+    heros: () => [
+      'Ici tu vois ton <b>niveau</b>, ton <b>rang</b> et tes statistiques (PV, attaque, défense…).',
+      'Tu gagnes de l\u2019<b>XP</b> en finissant des donjons : chaque niveau te donne <b>1 point de compétence</b>.',
+      'Pour <b>monter de rang</b> : remplis les conditions affichées, puis réussis l\u2019<b>épreuve de promotion</b>. Un rang plus haut ouvre des portails plus durs (et plus rentables).',
+    ],
+    competences: () => [
+      'Chaque niveau gagné te donne <b>1 point de compétence</b> (le chiffre rouge sur l\u2019onglet).',
+      'Clique sur une compétence, puis sur <b>Apprendre</b> (ou <b>Améliorer</b>) : ça dépense tes points et la rend plus forte.',
+      'Pour l\u2019utiliser, clique sur <b>Équiper</b> et choisis un emplacement : ' + K('cast2') + ', ' + K('cast3') + ' ou l\u2019ultime ' + K('super') + '. L\u2019attaque de base est sur ' + K('cast1') + '.',
+      'Les nouvelles compétences se débloquent avec ton <b>niveau</b> (5, 10, 15…). Au niveau 15, tu choisis une <b>spécialisation</b>.',
+      'Tu t\u2019es trompé ? <b>Réinitialiser</b> te rend tous tes points contre un peu d\u2019or.',
+    ],
+    dons: () => [
+      'Les <b>dons</b> sont des bonus passifs (plus de dégâts, de vie, de vitesse…).',
+      'Tu en trouves en donjon. Glisse-les ou clique pour les <b>équiper</b> dans tes emplacements ; ton <b>rang</b> donne plus d\u2019emplacements.',
+      'Un don déjà possédé donne des <b>éclats</b> : ils servent à <b>améliorer</b> tes dons. Certains dons ensemble forment une <b>synergie</b>.',
+    ],
+    inventaire: () => [
+      'Tes armes, armures et bijoux sont ici. Clique sur un objet pour voir ses statistiques, puis <b>Équiper</b>.',
+      'La couleur indique la <b>rareté</b> : commun, rare, épique, légendaire, mythique.',
+      'Les objets que tu n\u2019utilises plus peuvent être <b>recyclés</b> (bouton Recycler) pour récupérer des matériaux ; les matériaux se <b>vendent</b> contre de l\u2019or.',
+    ],
+    perso: () => [
+      'Change l\u2019<b>apparence</b> de ton héros : choisis un <b>skin</b> pour ta classe.',
+      'Chaque skin indique comment le débloquer (objectif à atteindre ou achat avec de l\u2019or). Ils ne changent pas tes statistiques.',
+    ],
+    forge: () => [
+      'La forge améliore tes <b>compétences</b> avec de l\u2019<b>or</b>.',
+      'Chaque branche renforce un groupe de sorts (dégâts, effets, recharges). Clique sur <b>Améliorer</b> quand tu as assez d\u2019or.',
+      'Certains paliers (niveaux 5 et 10) débloquent des effets spéciaux et font briller ton arme.',
+    ],
+    succes: () => [
+      'Les <b>succès</b> sont des défis : finir des donjons, battre des boss, ne pas prendre de dégâts…',
+      'Chaque succès réussi donne des <b>récompenses</b> (or, bonus, titres). Certains sont nécessaires pour monter de rang.',
+    ],
+    boutique: () => [
+      'Achète des <b>potions</b> avec ton or.',
+      'En donjon, bois-les avec ' + K('potion1') + ' et ' + K('potion2') + ' (ou les boutons du HUD sur mobile).',
+    ],
+    guilde: () => [
+      '<b>Créer</b> : choisis un nom, un tag de 3-4 lettres et un emblème, puis <b>Fonder la guilde</b>.',
+      '<b>Rejoindre</b> : demande le <b>code</b> de 6 lettres à un membre (ou scanne son QR code) et clique sur <b>Rejoindre</b>.',
+      'Rôles : <b>Chef</b> > <b>Officier</b> > <b>Membre</b> > <b>Recrue</b>. Le chef gère les rôles dans l\u2019onglet <b>Membres</b>.',
+      'Il faut être <b>connecté à ton compte</b> (onglet En ligne) pour utiliser les guildes.',
+    ],
+    classement: () => [
+      'Tous les joueurs connectés à leur compte apparaissent ici, triés par <b>rang</b> puis par <b>niveau</b>.',
+      'Monte de niveau et de rang pour grimper ! Les emails ne sont jamais affichés.',
+    ],
+    enligne: () => [
+      'Connecte-toi avec ton <b>compte Google</b> : ton héros est sauvegardé sur ton compte.',
+      'Ajoute des <b>amis</b> avec leur <b>code ami</b> (ou leur QR code), puis invite-les dans ton groupe.',
+      'En <b>groupe</b>, vous faites les donjons ensemble : le chef du groupe choisit le portail.',
+    ],
+    armee: () => [
+      'Tes <b>serviteurs</b> te suivent et se battent pour toi en donjon.',
+      'Clique sur un serviteur pour le mettre en <b>actif</b> ou le retirer ; le nombre de places actives est en haut à droite.',
+      'Pour en avoir plus : utilise <b>Extraction d\u2019âme</b> juste après avoir vaincu un ennemi (détails dans le cadre violet).',
+    ],
+  };
+  const GUIDE_KEY = 'donjon-guides-v1';
+  const guideState = () => { try { return JSON.parse(localStorage.getItem(GUIDE_KEY) || '{}') || {}; } catch (_) { return {}; } };
+  const guideSave = (st) => { try { localStorage.setItem(GUIDE_KEY, JSON.stringify(st)); } catch (_) {} };
+  function renderGuide(def, toggle) {
+    const box = $('camp-guide'); if (!box) return;
+    const fn = def && GUIDES[def.id];
+    if (!fn) { box.hidden = true; box.innerHTML = ''; box._id = null; return; }
+    const st = guideState();
+    if (st[def.id] === undefined) { st[def.id] = 'open'; guideSave(st); }           // première visite : ouvert
+    if (toggle) { st[def.id] = st[def.id] === 'open' ? 'closed' : 'open'; guideSave(st); }
+    const open = st[def.id] === 'open';
+    const hb = document.querySelector('#camp-panel-head .cph-help'); if (hb) { hb.classList.toggle('on', open); hb.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    if (!open) { box.hidden = true; box.innerHTML = ''; box._id = def.id; return; }
+    let items = []; try { items = fn() || []; } catch (_) { items = []; }
+    box.innerHTML = '<div class="cg-head"><span class="cg-ico">' + ico('tutorial', 18, '?') + '</span><b>Comment ça marche ?</b><button type="button" class="cg-close" data-guide="close" aria-label="Fermer le guide">' + ico('close', 14, '×') + '</button></div>'
+      + '<ol class="cg-list">' + items.map(t => '<li>' + t + '</li>').join('') + '</ol>';
+    box.hidden = false; box._id = def.id;
+  }
+  function initGuide() {
+    const box = $('camp-guide'), head = $('camp-panel-head');
+    const onClick = (e) => {
+      const b = e.target.closest('[data-guide]'); if (!b) return;
+      const def = campTab ? panels().get(campTab) : null; if (!def) return;
+      sfx('click'); renderGuide(def, true);
+    };
+    if (box) box.addEventListener('click', onClick);
+    if (head) head.addEventListener('click', onClick);
+    if (G.bus) G.bus.on('keysChanged', () => { const def = campTab ? panels().get(campTab) : null; renderGuide(def, false); });
+  }
+
   function renderPanelHead(def) {
     const h = $('camp-panel-head');
     if (!h) return;
     const sig = def ? def.id + '|' + def.title : '';
-    if (h._sig === sig) return;
+    if (h._sig === sig) { renderGuide(def, false); return; }
     h._sig = sig;
-    h.innerHTML = def ? `<span class="cph-ico">${tabIcon(def, 20)}</span><h2 class="cph-title">${esc(def.title || def.id)}</h2><span class="cph-line"></span>` : '';
+    h.innerHTML = def ? `<span class="cph-ico">${tabIcon(def, 20)}</span><h2 class="cph-title">${esc(def.title || def.id)}</h2><span class="cph-line"></span>` + (GUIDES[def.id] ? `<button type="button" class="cph-help ds-btn ds-btn--ghost ds-btn--sm" data-guide="toggle" aria-label="Comment ça marche ?"><span class="ds-btn__label">? Aide</span></button>` : '') : '';
+    renderGuide(def, false);
   }
   function renderPanel(dir) {
     const host = $('camp-panel'), main = $('hub-content');
@@ -2230,6 +2331,7 @@ window.G = window.G || {};
     tap($('btn-continue'), () => call('continueGame'));
     tap($('btn-new'), () => UI.showScreen('create'));
     initTitleAccount();
+    initGuide();
     tap($('btn-settings'), () => UI.openSettings());
     tap($('title-settings'), () => UI.openSettings());
     tap($('btn-tutorial'), () => UI.openTutorial(0));
