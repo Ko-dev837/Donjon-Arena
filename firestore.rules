@@ -43,6 +43,16 @@ service cloud.firestore {
           || existsAfter(/databases/$(database)/documents/guilds/$(g)/members/$(uid));
       }
 
+      // sauvegarde du héros (privée) : seul le propriétaire la lit et l'écrit
+      match /private/{doc} {
+        allow read: if signedIn() && me() == uid;
+        allow create, update: if signedIn() && me() == uid && doc == 'save'
+          && request.resource.data.keys().hasOnly(['v', 'data', 'nom', 'classe', 'niveau', 'at'])
+          && request.resource.data.data is string && request.resource.data.data.size() <= 900000
+          && str(request.resource.data.nom, 1, 20) && request.resource.data.at == request.time;
+        allow delete: if signedIn() && me() == uid;
+      }
+
       // demandes d'ami reçues : écrites par l'expéditeur, lues par le destinataire
       match /requests/{from} {
         allow read: if signedIn() && me() == uid;

@@ -183,7 +183,7 @@ window.G = window.G || {};
   function stopSocial() { socialOff.forEach(f => { try { f(); } catch (_) { /* rien */ } }); socialOff = []; }
   async function onAuth(u) {
     stopSocial();
-    if (!u) { O.grants = null; O.user = null; O.me = null; O.friends = []; O.requests = []; O.invites = []; O.guild = null; O.guildMembers = []; O.chat = []; O.guildLog = []; watchGuild(null); changed('auth'); return; }
+    if (!u) { cloudReady = false; O.grants = null; O.user = null; O.me = null; O.friends = []; O.requests = []; O.invites = []; O.guild = null; O.guildMembers = []; O.chat = []; O.guildLog = []; watchGuild(null); changed('auth'); return; }
     O.user = { uid: u.uid, name: cleanName(u.displayName || 'Joueur'), photo: u.photoURL || null };
     O.error = null; O.profileError = null;
     try { await ensureUserDoc(); }
@@ -201,6 +201,7 @@ window.G = window.G || {};
     changed('auth');
     usePendingFriendCode();
     applyGrants();
+    cloudCheck();
   }
   // ---- récompenses accordées par l'administrateur (Realtime Database : /grants/{uid}, écriture console uniquement) ----
   // ex. grants/<uid>/necromancien = true  → débloque la classe Nécromancien et propose de convertir le héros actuel
@@ -240,6 +241,68 @@ window.G = window.G || {};
     }
   }
   O.applyGrants = applyGrants;
+
+  // ---- sauvegarde du héros sur le compte (Firestore users/{uid}/private/save) : on retrouve son héros sur un autre appareil ----
+  let cloudReady = false, cloudT = 0, cloudLast = '';
+  const saveRef = () => fb.fs.collection('users').doc(O.user.uid).collection('private').doc('save');
+  const heroLine = h => h ? (cleanName(h.nom || 'Héros') + ' · ' + (h.classe === 'Elementaliste' ? 'Élémentaliste' : h.classe === 'Necromancien' ? 'Nécromancien' : (h.classe || '?')) + ' niv. ' + num(h.niveau, 1)) : '';
+  function cloudPushSoon(now) {
+    clearTimeout(cloudT);
+    cloudT = setTimeout(cloudPush, now ? 0 : 6000);
+  }
+  async function cloudPush() {
+    if (!cloudReady || O.mode !== 'firebase' || !O.user || !fb) return;
+    const p = profile(); if (!p || !p.nom) return;
+    let data = ''; try { data = JSON.stringify(p); } catch (_) { return; }
+    if (data === cloudLast || data.length > 900000) return;
+    try { await saveRef().set({ v: 1, data, nom: String(p.nom).slice(0, 20), classe: String(p.classe || '').slice(0, 20), niveau: Math.max(0, Math.min(999, Math.floor(num(p.niveau, 1)))), at: FV().serverTimestamp() }); cloudLast = data; O.cloudAt = Date.now(); changed('cloud'); }
+    catch (e) { console.warn('[Online] sauvegarde du compte', e && e.code); }
+  }
+  O.cloudPush = () => cloudPushSoon(true);
+  function applyRemote(data) {
+    try { const obj = JSON.parse(data); if (!obj || !obj.nom) return false; G.save.save(obj); } catch (_) { return false; }
+    toast('Héros récupéré depuis ton compte : chargement…');
+    setTimeout(() => location.reload(), 700);
+    return true;
+  }
+  async function cloudCheck() {
+    cloudReady = false;
+    if (O.mode !== 'firebase' || !O.user || !fb) return;
+    const uid = O.user.uid;
+    let snap = null;
+    try { snap = await saveRef().get(); } catch (e) { console.warn('[Online] lecture sauvegarde du compte', e && e.code); return; }
+    if (!O.user || O.user.uid !== uid) return;
+    const remote = snap && snap.exists ? snap.data() : null;
+    const local = profile();
+    if (!remote || !remote.data) { cloudReady = true; cloudPushSoon(true); return; }   // compte neuf : on y range le héros de cet appareil
+    let rp = null; try { rp = JSON.parse(remote.data); } catch (_) { rp = null; }
+    if (!rp) { cloudReady = true; cloudPushSoon(true); return; }
+    if (!local || !local.nom) { if (applyRemote(remote.data)) return; cloudReady = true; return; }
+    if (remote.data === JSON.stringify(local)) { cloudLast = remote.data; cloudReady = true; return; }
+    const same = rp.nom === local.nom && rp.classe === local.classe;
+    if (same && num(local.niveau, 1) >= num(rp.niveau, 1)) { cloudReady = true; cloudPushSoon(true); return; }   // même héros, cet appareil est à jour
+    // héros différents (ou celui du compte est plus avancé) : le joueur choisit, une seule fois par session
+    const key = 'donjon-cloud-asked-' + uid;
+    try { if (sessionStorage.getItem(key)) { cloudReady = true; return; } } catch (_) { /* rien */ }
+    const ask = async () => {
+      const scr = G.UI && G.UI.current && G.UI.current();
+      if (scr && scr !== 'title' && scr !== 'hub') { setTimeout(ask, 4000); return; }   // pas pendant un donjon
+      try { sessionStorage.setItem(key, '1'); } catch (_) { /* rien */ }
+      let v = null;
+      try {
+        v = await G.UI.choice({ title: 'Sauvegarde du compte', subtitle: 'Ton compte et cet appareil n\u2019ont pas le même héros. Lequel veux-tu jouer ?',
+          options: [
+            { label: 'Héros du compte', desc: heroLine(rp) + ' — remplace celui de cet appareil.', value: 'remote', icon: '☁️' },
+            { label: 'Héros de cet appareil', desc: heroLine(local) + ' — devient la sauvegarde du compte.', value: 'local', icon: '💾' },
+          ] });
+      } catch (_) { v = null; }
+      if (v === 'remote') { if (applyRemote(remote.data)) return; }
+      cloudReady = true;
+      if (v === 'local') cloudPushSoon(true);
+    };
+    ask();
+  }
+
   // lien d'invitation : https://…/?ami=CODE → demande d'ami automatique après connexion
   let pendingFriend = null;
   try { const q = new URLSearchParams(location.search).get('ami'); if (q) pendingFriend = String(q).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); } catch (_) { /* rien */ }
@@ -1214,7 +1277,8 @@ window.G = window.G || {};
     try { if (G.core && G.core.onRender) G.core.onRender(dt => { try { frame(dt); } catch (e) { console.error('[Online] frame', e); } }); } catch (_) { /* rien */ }
     if (G.bus) {
       G.bus.on('profileChanged', () => { if (O.mode === 'firebase') syncProfileSoon(); else if (O.mode === 'local') updatePresence(); if (O.lobby) { lastAccess = ''; checkPortalAccess(); } });
-      G.bus.on('runEnd', () => { if (O.mode === 'firebase') syncProfileSoon(); });
+      G.bus.on('runEnd', () => { if (O.mode === 'firebase') { syncProfileSoon(); cloudPushSoon(true); } });
+      G.bus.on('profileChanged', () => { if (O.mode === 'firebase') cloudPushSoon(false); });
       G.bus.on('screen', e => { if (e && e.id === 'hub' && O.lobby) { lastAccess = ''; checkPortalAccess(); } });
     }
     init().catch(e => { console.warn('[Online] init', e); O.mode = 'off'; changed('mode'); });

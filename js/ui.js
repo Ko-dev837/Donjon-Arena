@@ -523,6 +523,41 @@ window.G = window.G || {};
     if (info) setText(info, hasSaveFlag && p && p.nom ? '' : 'Aucune sauvegarde : commence une nouvelle aventure !');
   };
 
+  // ---- compte en ligne sur l'écran titre : se connecter pour retrouver son héros ----
+  function renderTitleAccount() {
+    const box = $('title-account'); if (!box) return;
+    const O = G.Online;
+    const mode = O && O.mode;
+    if (!O || (mode !== 'firebase' && mode !== 'loading')) { box.hidden = true; box.innerHTML = ''; return; }
+    let sig, html;
+    if (mode === 'loading') { sig = 'loading'; html = '<p class="ta-note">Connexion au serveur…</p>'; }
+    else if (!O.user) {
+      sig = 'out';
+      html = '<button class="ds-btn ds-btn--lg ds-btn--block ta-signin" type="button" data-ta="in"><span class="ds-btn__icon">' + ico('user', 18) + '</span><span class="ds-btn__label">Se connecter à mon compte</span></button>'
+        + '<p class="ta-note">Tu as déjà un compte ? Retrouve ton héros, tes amis et ta guilde.</p>';
+    } else {
+      const nm = esc((O.me && O.me.name) || O.user.name || 'Joueur');
+      sig = 'in|' + nm + '|' + (O.cloudAt ? 1 : 0);
+      html = '<div class="ta-who"><span class="ta-dot"></span><span>Connecté : <b>' + nm + '</b></span>'
+        + '<button class="ds-btn ds-btn--ghost ds-btn--sm" type="button" data-ta="out">Changer de compte</button></div>'
+        + (O.cloudAt ? '<p class="ta-note">Héros sauvegardé sur ton compte.</p>' : '');
+    }
+    if (box._sig !== sig) { box._sig = sig; box.innerHTML = html; }
+    box.hidden = false;
+  }
+  function initTitleAccount() {
+    const box = $('title-account'); if (!box) return;
+    box.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-ta]'); if (!b || !G.Online) return;
+      sfx('click');
+      if (b.dataset.ta === 'in') G.Online.signIn();
+      else G.Online.signOut();
+    });
+    if (G.bus) G.bus.on('online', renderTitleAccount);
+    renderTitleAccount();
+  }
+  UI.renderTitleAccount = renderTitleAccount;
+
   // ==================================================================
   //  CRÉATION DU PERSONNAGE
   // ==================================================================
@@ -2194,6 +2229,7 @@ window.G = window.G || {};
     // Titre
     tap($('btn-continue'), () => call('continueGame'));
     tap($('btn-new'), () => UI.showScreen('create'));
+    initTitleAccount();
     tap($('btn-settings'), () => UI.openSettings());
     tap($('title-settings'), () => UI.openSettings());
     tap($('btn-tutorial'), () => UI.openTutorial(0));
