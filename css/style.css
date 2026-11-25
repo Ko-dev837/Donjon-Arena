@@ -1008,3 +1008,4 @@ html.ds-reduce-motion .hb-ring, html.ds-reduce-motion .logo-l2::after, html.ds-r
 .rh-phone i { position: absolute; left: 50%; bottom: 6px; width: 16px; height: 4px; margin-left: -8px; border-radius: 2px; background: var(--ds-accent, #46d4ff); }
 @keyframes rhTurn { 0%, 20% { transform: rotate(0deg); } 50%, 80% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
 html.is-portrait-blocked body { overflow: hidden; }
+@media (max-height: 520px) and (orientation: landscape) { .title-foot { display: none; } .title-save { margin-top: 4px; } }
