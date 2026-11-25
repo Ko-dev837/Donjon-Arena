@@ -328,12 +328,19 @@ window.G = window.G || {};
       // lame courbe : part de l'extrémité, vers -Y (vers l'avant quand le fût est dressé), se recourbe
       const blen = +bl.len || 0.9, bw = +bl.width || 0.16;
       const bcol = C(bl.color, P0.blade), bL = LAY(bl.mat, 'blade');
-      const g = GE.blade('scythe|' + (bl.style || 's') + '|' + (+bl.curve || 0.8), bl.style === 'serrated' ? [[0, 0.5], [0.15, 0.55], [0.3, 0.42], [0.45, 0.52], [0.6, 0.38], [0.75, 0.4], [0.9, 0.2], [1, 0]] : [[0, 0.5], [0.3, 0.55], [0.6, 0.45], [0.85, 0.25], [1, 0]], -(+bl.curve || 0.8) * 0.5, 0);
-      // géo : +Y longueur → -Y bone ; largeur X → Z ; épaisseur → X
-      // plat de la lame perpendiculaire au fût (croissant lisible du dessus quand la faux est dressée)
+      // croissant : l'échelle X suit la LONGUEUR (sinon la courbure, multipliée par la largeur, disparaissait → planche droite)
+      const sx = blen * 0.6, hw = (bw * 0.5) / sx, cur = -(+bl.curve || 0.8) * 1.15;
+      const prof = bl.style === 'serrated'
+        ? [[0, hw], [0.15, hw * 1.15], [0.3, hw * 0.85], [0.45, hw * 1.05], [0.6, hw * 0.75], [0.75, hw * 0.7], [0.9, hw * 0.35], [1, 0]]
+        : [[0, hw], [0.25, hw * 1.1], [0.5, hw * 0.95], [0.75, hw * 0.6], [0.9, hw * 0.3], [1, 0]];
+      const g = GE.blade('scythe2|' + (bl.style || 's') + '|' + cur.toFixed(2) + '|' + hw.toFixed(3), prof, cur, 0);
       const RB = alignEuler([0, -1, 0], [0, 0, 1]);
-      add(B, bL === 'bone' ? 'bone' : 'blade', g, bcol, [0, 0, z1 - 0.08], [bw, blen, 0.03], RB);
-      if (bl.edgeGlow) add(B, 'glow', GE.blade('scytheEdge', [[0, 0.12], [0.6, 0.1], [1, 0]], -(+bl.curve || 0.8) * 0.5 * 3, 0), C(bl.edge, P0.glow), [bw * 0.4, 0, z1 - 0.08], [bw * 0.3, blen * 0.98, 0.034], RB, NO);
+      add(B, bL === 'bone' ? 'bone' : 'blade', g, bcol, [0, 0, z1 - 0.08], [sx, blen, 0.03], RB);
+      if (bl.edgeGlow) {
+        // fil lumineux le long du bord intérieur (côté concave), même courbe que la lame
+        const ep = prof.map(([y, w]) => [y, Math.min(w, hw * 0.16), -(w - Math.min(w, hw * 0.16))]);
+        add(B, 'glow', GE.blade('scythe2Edge|' + cur.toFixed(2) + '|' + hw.toFixed(3) + '|' + (bl.style || 's'), ep, cur, 0), C(bl.edge, P0.glow), [0, 0, z1 - 0.08], [sx, blen * 1.005, 0.036], RB, NO);
+      }
       // collier + crâne à la jonction (yeux = glow → relique)
       add(B, 'metal', GE.cyl(8), P0.metalD, [0, -0.02, z1 - 0.06], [0.07, 0.11, 0.07], CYLZ);
       const skc = C(sk.color, P0.bone), skL = LAY(sk.mat, 'bone');

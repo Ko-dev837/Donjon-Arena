@@ -1729,8 +1729,8 @@ window.G = window.G || {};
     elementaliste_mur_glace: 'Un mur de glace qui bloque les tirs et ralentit les ennemis.',
     // Nécromancien (compétences définies dans js/sys/necro.js)
     necro_basic: 'Tu lances une âme sur l\'ennemi ; chaque touche te rend du mana.',
-    necro_invoke: 'Tu appelles tes serviteurs d\'ombre pour qu\'ils se battent avec toi.',
-    necro_extract: 'Tu essaies de prendre l\'âme d\'un ennemi mort pour en faire un serviteur.',
+    necro_invoke: 'Tu appelles tes serviteurs d\'ombre. S\'ils sont déjà là, ils reviennent près de toi, se soignent et attaquent ta cible.',
+    necro_extract: 'Tu prends l\'âme d\'un ennemi mort pour en faire un serviteur. Sans corps, tu blesses l\'ennemi visé.',
     necro_mark: 'Tu maudis un ennemi : il prend plus de dégâts et tes serviteurs l\'attaquent.',
     necro_blast: 'Une explosion d\'ombre, plus forte près des corps et avec tes Âmes.',
     necro_army: 'Des soldats fantômes sortent du sol pour t\'aider un moment.',

@@ -166,7 +166,7 @@ window.G = window.G || {};
       const cz = 0.5, fz = fuller || 0;
       const ring = [];
       for (let k = 0; k < prof.length; k++) {
-        const y = prof[k][0], w = prof[k][1], cx = (curve || 0) * y * y;
+        const y = prof[k][0], w = prof[k][1], cx = (curve || 0) * y * y + (prof[k][2] || 0);
         const zc = cz * Math.min(1, w * 2.2 + 0.05);
         // 6 points : fil gauche, dos haut, (gouttière), fil droit, dos bas
         ring.push([
@@ -925,7 +925,8 @@ window.G = window.G || {};
     const yA = m.yCapeA;
     let total = style === 'short' || style === 'half' ? Math.min(yA * 0.42, L1 + L2 * 0.4) : Math.max(L1 + L2 + 0.1 * k, yA - m.ground - 0.08 * k);
     if (style === 'tattered') total *= 0.93;
-    const w0 = (style === 'half' ? 1.2 : 1.85) * m.shX, fl = style === 'royal' ? 1.55 : style === 'short' ? 1.25 : 1.4;
+    const w0 = (o.narrow ? 1.32 : style === 'half' ? 1.2 : 1.85) * m.shX, fl = o.narrow ? 1.3 : style === 'royal' ? 1.55 : style === 'short' ? 1.25 : 1.4;
+    const cv = o.narrow ? 0.34 : 0.16;   // cape étroite qui épouse le dos (Nécromancien) au lieu d'un panneau plat
     const segs = [['capeA', Math.min(L1, total)], ['capeB', Math.min(L2, Math.max(0, total - L1))], ['capeC', Math.max(0, total - L1 - L2)]];
     let done = 0, wTop = w0;
     const jag = style === 'tattered' ? 0.16 : style === 'energy' ? 0.1 : 0;
@@ -937,9 +938,9 @@ window.G = window.G || {};
       const wBot = w0 * (1 + (fl - 1) * ((done + ln) / total));
       const flr = wBot / wTop;
       const h = ln + (last ? 0 : 0.05 * k);
-      X.add(bn, layer, GE.panel({ cv: 0.16, fl: flr, th: 0.022 / (wTop / k), n: 8, jag: last ? jag / Math.max(0.3, h / k) * 0.6 : 0 }), col, [i === 0 ? -off : 0, 0.02 * k * (i === 0 ? 1 : 0), 0], [wTop, h, wTop], [0, PI, 0]);
+      X.add(bn, layer, GE.panel({ cv, fl: flr, th: 0.022 / (wTop / k), n: 8, jag: last ? jag / Math.max(0.3, h / k) * 0.6 : 0 }), col, [i === 0 ? -off : 0, 0.02 * k * (i === 0 ? 1 : 0), 0], [wTop, h, wTop], [0, PI, 0]);
       // doublure (intérieur, couleur foncée) légèrement en avant
-      X.add(bn, 'cloth2', GE.panel({ cv: 0.16, fl: flr, th: 0.01 / (wTop / k), n: 6, jag: last ? jag / Math.max(0.3, h / k) * 0.6 : 0 }), lining, [i === 0 ? -off : 0, 0.0, 0.012 * k], [wTop * 0.96, h * 0.99, wTop * 0.96], [0, PI, 0], NO);
+      X.add(bn, 'cloth2', GE.panel({ cv, fl: flr, th: 0.01 / (wTop / k), n: 6, jag: last ? jag / Math.max(0.3, h / k) * 0.6 : 0 }), lining, [i === 0 ? -off : 0, 0.0, 0.012 * k], [wTop * 0.96, h * 0.99, wTop * 0.96], [0, PI, 0], NO);
       if (last && o.trim !== false && style !== 'tattered' && style !== 'energy') {
         X.add(bn, o.trimLayer || 'cloth2', GE.panel({ cv: 0.16, fl: 1, th: 0.05, n: 8 }), o.trim || c.trim, [0, -h + 0.035 * k, -0.002 * k], [wBot * 1.01, 0.04 * k, wBot * 1.01], [0, PI, 0], NO);
       }
@@ -1176,8 +1177,14 @@ window.G = window.G || {};
       if (kind === 'porcelain') X.add(B, 'glow', GE.box(), c.glow, [0.056 * hs, 0.15 * hs, 0.185 * hs], [0.006 * hs, 0.06 * hs, 0.006 * hs], null, NO);
       if (kind === 'bone') X.add(B, 'bone', GE.box(), shade(cc, -0.2), [0, 0.07 * hs, 0.175 * hs], [0.07 * hs, 0.006 * hs, 0.01 * hs], null, NO);
     } else if (kind === 'beak') {
-      P.mask(X, 'bone', col);
-      X.add(B, 'bone', GE.cone(6), c.bone, [0, 0.12 * hs, 0.26 * hs], [0.07 * hs, 0.16 * hs, 0.06 * hs], [HP + 0.45, 0, 0]);
+      // masque de peste : haut du visage (yeux cerclés de verres lumineux) + long bec d'os ; la bouche et le menton restent visibles
+      const bc = col || shade(c.bone, -0.12);
+      band('bone', bc, 0.16 * hs, 0.27 * hs, 2.4, 1.06, { outline: true });
+      for (const sg of [-1, 1]) {
+        X.add(B, 'metal', GE.torus(0.3, 10), c.metalD, [sg * 0.056 * hs, 0.205 * hs, (RZ * e(0.205 * hs) + gap) + CZ + 0.02 * hs], [0.034 * hs, 0.034 * hs, 0.02 * hs], null, NO);
+        X.add(B, 'glow', GE.sphLo(), c.glow, [sg * 0.056 * hs, 0.205 * hs, (RZ * e(0.205 * hs) + gap) + CZ + 0.024 * hs], [0.026 * hs, 0.026 * hs, 0.01 * hs], null, NO);
+      }
+      X.add(B, 'bone', GE.cone(8), bc, [0, 0.15 * hs, (RZ * e(0.15 * hs) + gap) + CZ + 0.12 * hs], [0.05 * hs, 0.26 * hs, 0.045 * hs], [-1.1, 0, 0]);
     }
   };
 
@@ -1431,6 +1438,11 @@ window.G = window.G || {};
       if (r.pL) r.pL = sk.pauldron; if (r.pR) r.pR = sk.pauldron;
     }
     if (r.armL === undefined) { r.armL = r.arms === 'bracerL' ? 'bracer' : r.arms; r.armR = r.arms === 'bracerL' ? null : r.arms; }
+    // Nécromancien : pas de masque plein (plaque blanche/dorée qui cachait le visage), capuche + couronne pour l'Or noir et le Roi blanc
+    if (cls === 'Necromancien') {
+      const NF = { vert: { mask: null }, or: { head: 'deepHood', mask: null }, roi: { head: 'deepHood', mask: null } }[key];
+      if (NF) Object.assign(r, NF);
+    }
     r._key = key; r._cls = cls;
     return r;
   }
@@ -1561,7 +1573,7 @@ window.G = window.G || {};
       const st = map[cs] || cs;
       const eng = st === 'energy';
       if (cs === 'wingsLight' || cs === 'wingsEnergy') P.wings(X, cs === 'wingsLight' ? 0xfffaf0 : shade(c.glow, 0.3), { layer: 'glow', size: cs === 'wingsLight' ? 1.15 : 0.85 });
-      else P.cape(X, st, { col: capeCol, lining: c.capeLining != null ? c.capeLining : st === 'royal' ? c.second : shade(capeCol, -0.35), trim, trimLayer: r.goldTrim ? 'gold' : 'cloth2', emblem: r.capeEmblem || (heavy && st !== 'tattered' && !eng ? r.emblem : null), emblemCol: trim, col2: c.second, layer: eng ? 'glow' : 'cape', clasp: r.goldTrim ? trim : c.metalL, claspLayer: r.goldTrim ? 'gold' : 'metal', short: cs === 'capelet' ? 0.6 : 1, leaves: cs === 'leafMantle' || cs === 'leafLong', trail: cs === 'trailing' });
+      else P.cape(X, st, { col: capeCol, lining: c.capeLining != null ? c.capeLining : st === 'royal' ? c.second : shade(capeCol, -0.35), trim, trimLayer: r.goldTrim ? 'gold' : 'cloth2', emblem: r.capeEmblem || (heavy && st !== 'tattered' && !eng ? r.emblem : null), emblemCol: trim, col2: c.second, layer: eng ? 'glow' : 'cape', clasp: r.goldTrim ? trim : c.metalL, claspLayer: r.goldTrim ? 'gold' : 'metal', short: cs === 'capelet' ? 0.6 : 1, leaves: cs === 'leafMantle' || cs === 'leafLong', trail: cs === 'trailing', narrow: cs === 'trailing' });
     }
 
     // ---- tête (coiffe A1 traduite ou coiffe exclusive du skin A4)

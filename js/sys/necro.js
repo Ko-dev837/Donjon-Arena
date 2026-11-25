@@ -907,21 +907,41 @@ window.G = window.G || {};
     }),
     necro_invoke: SK({
       id: 'necro_invoke', name: 'Invocation des ombres', icon: '🌑', kind: 'active', manaCost: 20, cd: 10, maxLevel: 5, unlockLevel: 1, tree: { branch: 'B', tier: 1, requires: [] },
-      desc: (l) => 'Appelle vos serviteurs actifs manquants autour de vous (jusqu\'au maximum d\'invocations). Arrivée avec un bouclier de ' + (8 * l) + ' % de leurs PV ; un serviteur tombé revient après ' + Math.max(6, 18 - 2 * l) + ' s.',
-      cast(api, l) {
+      desc: (l) => 'Appelle vos serviteurs actifs manquants autour de vous (jusqu\'au maximum d\'invocations). Arrivée avec un bouclier de ' + (8 * l) + ' % de leurs PV ; un serviteur tombé revient après ' + Math.max(6, 18 - 2 * l) + ' s. Armée déjà présente : ralliement (retour près de vous, soin, bouclier, attaque de la cible visée).',
+      cast(api, l, ctx) {
         const n = summonActive(api, { shield: 0.08 * l + (fl('dague') >= 10 ? 0.2 : 0) });
         const pl = api.player();
-        // armée au complet : lancer annulé (false) → G.Skills.cast rembourse le coût EXACT et ne déclenche ni recharge ni 'skillCast'
-        if (!n) { try { api.text(pl.pos, 'Armée au complet', '#9a8cc0', 1); } catch (e) { /* ignore */ } return false; }
+        if (!n) {
+          // armée déjà sur le terrain : ralliement — les serviteurs reviennent près du héros, sont soignés et protégés, puis foncent sur la cible visée
+          const live = S.live.filter(x => !x.temp && !x.fadeT && x.m && !x.m.dead);
+          if (!live.length) { try { api.text(pl.pos, 'Aucun serviteur : extrais des âmes d\'abord', '#9a8cc0', 1.4); } catch (e) { /* ignore */ } return false; }   // rien à appeler : coût remboursé
+          const tgt = targetOf(api, ctx, 14);
+          live.forEach((x, i) => {
+            const m = x.m;
+            if (Math.hypot(m.pos.x - pl.pos.x, m.pos.z - pl.pos.z) > 5) { const a = (i / live.length) * Math.PI * 2 + 0.6; m.pos.x = pl.pos.x + Math.cos(a) * 1.9; m.pos.z = pl.pos.z + Math.sin(a) * 1.9; try { api.vfx('shadowRise', m.pos, {}); } catch (e) { /* ignore */ } }
+            m.pv = Math.min(m.pvMax, m.pv + m.pvMax * (0.2 + 0.05 * l));
+            m.shield = Math.max(m.shield || 0, (0.08 * l + 0.1) * m.pvMax);
+            if (tgt) { x.tgt = tgt; x.retarget = 2.5; x.atkT = 0; }
+          });
+          try { api.vfx('summonCircle', pl.pos, { color: 0x8a2be2 }); api.text(pl.pos, 'Ralliement !', '#b98cff', 1); api.sfx('spawn'); } catch (e) { /* ignore */ }
+        }
         try { api.shake(0.15); } catch (e) { /* ignore */ }
       },
     }),
     necro_extract: SK({
       id: 'necro_extract', name: 'Extraction d\'âme', icon: '🕯️', kind: 'active', manaCost: 12, cd: 1.2, maxLevel: 5, unlockLevel: 1, tree: { branch: 'C', tier: 1, requires: [] },
-      desc: (l) => 'Arrache l\'âme du cadavre le plus proche (fenêtre de ' + (4 + 0.4 * l).toFixed(1) + ' s après la mort, portée ' + (8 + l) + ') : ' + Math.round(100 * (0.25 + 0.04 * (l - 1))) + ' % (commun), ' + Math.round(100 * (0.18 + 0.03 * (l - 1))) + ' % (élite), ' + Math.round(100 * (0.20 + 0.04 * (l - 1))) + ' % (boss) d\'obtenir un serviteur. Sans action, extraction automatique à moitié de chance. Chaque réussite donne 1 Âme (dépensée par Explosion d\'ombre et Armée des morts).',
-      cast(api, l) {
+      desc: (l) => 'Arrache l\'âme du cadavre le plus proche (fenêtre de ' + (4 + 0.4 * l).toFixed(1) + ' s après la mort, portée ' + (8 + l) + ') : ' + Math.round(100 * (0.25 + 0.04 * (l - 1))) + ' % (commun), ' + Math.round(100 * (0.18 + 0.03 * (l - 1))) + ' % (élite), ' + Math.round(100 * (0.20 + 0.04 * (l - 1))) + ' % (boss) d\'obtenir un serviteur. Sans action, extraction automatique à moitié de chance. Sans cadavre, arrache un fragment d\'âme à l\'ennemi visé (dégâts d\'ombre, soin léger). Chaque réussite donne 1 Âme (dépensée par Explosion d\'ombre et Armée des morts).',
+      cast(api, l, ctx) {
         const pl = api.player(); const c = nearestCorpse(pl.pos, 8 + l);
-        if (!c) { try { api.restoreMana(this.manaCost); api.text(pl.pos, 'Aucune âme à portée', '#9a8cc0', 1); } catch (e) { /* ignore */ } return; }
+        if (!c) {
+          // pas de cadavre : la main d'ombre arrache un fragment d'âme à l'ennemi visé (dégâts d'ombre + un peu de PV)
+          const e = targetOf(api, ctx, 8 + l);
+          if (!e) { try { api.restoreMana(this.manaCost); api.text(pl.pos, 'Aucune âme à portée', '#9a8cc0', 1); } catch (err) { /* ignore */ } return false; }
+          const at = V3(e.pos.x, 0, e.pos.z);
+          api.aoe({ pos: at, radius: 1.3, damage: intel(api) * NECRO_BAL * (1.1 + 0.1 * (l - 1)) * ((ctx && ctx.dmgMult) || 1), element: 'ombre', delay: 0.2, telegraph: false, source: 'player', tags: ['sk:necro_extract', 'aoe'], onHit: () => { try { api.heal(pl.pvMax * 0.03); } catch (err) { /* ignore */ } } });
+          try { api.vfx('shadowRise', at, {}); api.sfx('throw'); } catch (err) { /* ignore */ }
+          return;
+        }
         const r = tryExtract(c, true);
         if (r.full) { try { api.restoreMana(this.manaCost); } catch (e) { /* ignore */ } }
       },
