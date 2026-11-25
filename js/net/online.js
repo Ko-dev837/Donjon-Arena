@@ -200,7 +200,32 @@ window.G = window.G || {};
     watchMe();
     changed('auth');
     usePendingFriendCode();
+    applyGrants();
   }
+  // ---- récompenses accordées par l'administrateur (Realtime Database : /grants/{uid}, écriture console uniquement) ----
+  // ex. grants/<uid>/necromancien = true  → débloque la classe Nécromancien et propose de convertir le héros actuel
+  async function applyGrants() {
+    if (!O.db || !O.user || O.db.kind !== 'firebase') return;
+    let g = null;
+    try { g = await O.db.get('grants/' + O.user.uid); } catch (e) { return; }
+    if (!g || typeof g !== 'object') return;
+    const pr = G.game && G.game.profile;
+    if (!pr || !pr.classe) { applyGrants.tries = (applyGrants.tries || 0) + 1; if (applyGrants.tries < 120) setTimeout(applyGrants, 3000); return; } // héros pas encore chargé : on réessaie
+    pr.grantsApplied = pr.grantsApplied || {};
+    if (g.necromancien && !pr.grantsApplied.necromancien && G.Necro) {
+      pr.grantsApplied.necromancien = true;
+      try {
+        G.Necro.ensureProfile(pr);
+        pr.awakening.unlocked = true;
+        const already = pr.classe === 'Necromancien';
+        if (!already) pr.awakening.pending = true;
+        if (G.game.saveProfile) G.game.saveProfile();
+        if (G.UI && G.UI.toast) G.UI.toast('Récompense reçue : classe Nécromancien débloquée !', 'success');
+        if (!already && G.Necro.offerConversion) setTimeout(() => { try { G.Necro.offerConversion(pr); } catch (_) {} }, 600);
+      } catch (e) { console.warn('[Online] récompense', e); }
+    }
+  }
+  O.applyGrants = applyGrants;
   // lien d'invitation : https://…/?ami=CODE → demande d'ami automatique après connexion
   let pendingFriend = null;
   try { const q = new URLSearchParams(location.search).get('ami'); if (q) pendingFriend = String(q).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); } catch (_) { /* rien */ }

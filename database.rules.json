@@ -19,6 +19,13 @@
       }
     },
 
+    "grants": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
     "invites": {
       "$to": {
         ".read": "auth != null && auth.uid === $to",
