@@ -383,6 +383,7 @@ window.G = window.G || {};
   function loadProfile() {
     const p = normalizeProfile(safe(G.save, 'load', []));
     if (p) ensureAll(p);
+    if (p && safe(G.Inventory, 'purgeWrongClass', [p])) safe(G.save, 'save', [p]);   // objets d'une autre classe → matériaux
     return p;
   }
   /** Sauve + notifie (profileChanged). Réentrance protégée. */

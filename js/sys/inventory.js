@@ -337,8 +337,18 @@ window.G = window.G || {};
     const m = salvageYield(item); Object.keys(m).forEach((k) => addMaterial(p, k, m[k]));
     const inv = p.inventory; inv.items.splice(inv.items.indexOf(item), 1); return m;
   }
+  const wrongClass = (p, item) => !!(item && p && p.classe && Array.isArray(item.classes) && item.classes.length && item.classes.indexOf(p.classe) < 0);
+  /** objets réservés à une autre classe déjà dans le sac : recyclés en matériaux (jamais ceux équipés ou verrouillés) */
+  function purgeWrongClass(p) {
+    if (!p || !p.classe || !p.inventory || !Array.isArray(p.inventory.items)) return 0;
+    const bad = p.inventory.items.filter((i) => wrongClass(p, i) && !isEq(p, i) && !i.locked);
+    bad.forEach((i) => doSalvage(p, i));
+    if (bad.length) notify(bad.length + ' objet' + (bad.length > 1 ? 's' : '') + ' d\u2019une autre classe recyclé' + (bad.length > 1 ? 's' : '') + ' en matériaux', 'commun', '♻️');
+    return bad.length;
+  }
   function add(p, item) {
     ensureProfile(p); const inv = p.inventory;
+    if (wrongClass(p, item)) return { ok: false, wrongClass: true };          // jamais d'objet d'une autre classe dans le sac
     if (bagFree(p) > 0) { inv.items.push(item); return { ok: true }; }
     const ri = rarIdx(item.rarity);
     if (ri > 0) {
@@ -451,7 +461,13 @@ window.G = window.G || {};
           const r = add(p, it); res.items.push(it); announceItem(it, r);
         }
       } else if (I().bases[id]) {
-        for (let i = 0; i < count; i++) { const it = build(id, rarIdx(I().bases[id].rarity || 'rare'), p.niveau || 1, p.rank || 'E'); add(p, it); res.items.push(it); announceItem(it); }
+        for (let i = 0; i < count; i++) {
+          let it = build(id, rarIdx(I().bases[id].rarity || 'rare'), p.niveau || 1, p.rank || 'E');
+          // équipement de boss réservé à une autre classe : remplacé par une pièce de même rareté pour TA classe
+          if (wrongClass(p, it)) it = generate(p.niveau || 1, (o && o.rank) || p.rank || 'E', it.rarity, { classe: p.classe });
+          if (!it || wrongClass(p, it)) continue;
+          add(p, it); res.items.push(it); announceItem(it);
+        }
       } else {
         addMaterial(p, id, count); res.materials[id] = (res.materials[id] || 0) + count;
         const d = I().materials[id]; notify((d ? d.icon + ' ' : '') + '+' + count + ' ' + (d ? d.name : id), d ? d.rarity : 'commun', d && d.icon);
@@ -682,7 +698,7 @@ window.G = window.G || {};
   G.bus.on('bossKilled', (e) => { if (e && e.boss) { try { if (e.boss.boss === undefined) e.boss.boss = true; dropFor(e.boss, e.run); } catch (err) { console.error('[butin boss]', err); } } });
 
   G.Inventory = {
-    ensureProfile, generate, add, equip, unequip, salvage, salvageAll, lock, upgrade, upgradeCost, reforgeCost, craft,
+    ensureProfile, generate, add, purgeWrongClass, wrongClass, equip, unequip, salvage, salvageAll, lock, upgrade, upgradeCost, reforgeCost, craft,
     statsFromGear, itemTotals, itemPower, grantReward, addMaterial, matCount, hasMaterials, sellMaterial, convertMaterial,
     applyEffects, canEquip, equippedItems, describe, fmtStat, fmtVal, salvageYield, bagFree, missing, validateEquipped,
     levelRank, EFFECTS, SLOT_IDS, _build: build, _pickRarity: pickRarity, _rarityWeights: rarityWeights, _powerOf: powerOf,
@@ -1144,4 +1160,6 @@ window.G = window.G || {};
     badge: (p) => (p && p.inventory ? 0 : 0) };
   if (G.UI && G.UI.registerPanel) G.UI.registerPanel(PANEL); else if (G.Panels && G.Panels.register) G.Panels.register(PANEL.id, PANEL);
   G.Inventory.panel = PANEL;
+  // changement de classe (Nécromancien…) : les objets de l'ancienne classe ne servent plus → matériaux
+  try { if (G.bus) G.bus.on('classChanged', (e) => { const p = (e && e.profile) || prof(); if (p && purgeWrongClass(p)) commit(p); }); } catch (_) { /* rien */ }
 })();

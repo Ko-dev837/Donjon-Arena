@@ -1983,7 +1983,7 @@ window.G = window.G || {};
       try {
         (def.rewards || []).forEach(r => { if (G.rng.chance(r.chance == null ? 1 : r.chance)) out.push({ type: 'material', id: r.id, n: r.qty ? G.rng.int(r.qty[0], r.qty[1]) : 1 }); });
         if (def.cristal && G.rng.chance(def.cristal)) out.push({ type: 'material', id: 'cristal_eveil', n: 1 });
-        if (def.gear && G.Inventory && G.Inventory._build && G.ITEMS && G.ITEMS.bases[def.gear.id] && G.rng.chance(def.gearChance || 0.4)) {
+        if (def.gear && G.Inventory && G.Inventory._build && G.ITEMS && G.ITEMS.bases[def.gear.id] && !(p && p.classe && Array.isArray(G.ITEMS.bases[def.gear.id].classes) && G.ITEMS.bases[def.gear.id].classes.indexOf(p.classe) < 0) && G.rng.chance(def.gearChance || 0.4)) {
           const ri = Math.max(0, G.ITEMS.rarities.findIndex(r => r.id === def.gear.rarity));
           out.push({ type: 'item', item: G.Inventory._build(def.gear.id, ri, (p && p.niveau) || 1, def.rank || 'E') });
         }
