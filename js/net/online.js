@@ -546,6 +546,8 @@ window.G = window.G || {};
     const touch = uid => { const m = O.guildMembers.find(x => x.uid === uid); if (m) { apply(m); sortMembers(); changed('guild'); } };
     guildOff.push(g.collection('members').onSnapshot(s => {
       if (!s.docs.some(d => d.id === O.user.uid)) return lost();      // exclu (ou guilde dissoute)
+      // pseudo affiché dans la guilde = pseudo actuel du compte (il restait figé sur l'ancien nom)
+      try { const mine = s.docs.find(d => d.id === O.user.uid), pn = pseudo(); if (mine && cleanName(mine.data().name) !== pn) g.collection('members').doc(O.user.uid).update({ name: pn }).catch(() => {}); } catch (_) { /* rien */ }
       O.guildMembers = s.docs.map(d => {
         const x = d.data();
         return apply({ uid: d.id, name: cleanName(x.name), role: ROLES.indexOf(x.role) >= 0 ? x.role : 'membre', joined: tsMs(x.joined), online: false, inGame: false, classe: null, rank: null, niveau: null });
@@ -653,7 +655,14 @@ window.G = window.G || {};
     b.set(fb.fs.collection('users').doc(O.user.uid), { guildId: gid }, { merge: true });
     logTo(b, gid, 'arrivee', pseudo() + ' a rejoint la guilde.');
     try { await b.commit(); }
-    catch (e) { if (/permission/i.test(String(e && (e.code || e.message)))) { toast('Impossible de rejoindre : recrutement fermé ou code périmé.'); return false; } throw e; }
+    catch (e) {
+      if (/permission/i.test(String(e && (e.code || e.message)))) {
+        // refus du serveur : soit on est déjà membre (profil désynchronisé) → on répare le lien, soit le recrutement est fermé
+        try { await fb.fs.collection('users').doc(O.user.uid).set({ guildId: gid }, { merge: true }); toast('Tu fais déjà partie de cette guilde : elle est de retour !'); return true; }
+        catch (e2) { toast('Impossible de rejoindre : recrutement fermé ou code périmé.'); return false; }
+      }
+      throw e;
+    }
     toast('Bienvenue dans la guilde !');
     return true;
   };

@@ -1107,7 +1107,7 @@ window.G = window.G || {};
     try { G.__pcUi && G.__pcUi.dsFallback && G.__pcUi.dsFallback(); } catch (e) { /* ignore */ }
     const st = document.createElement('style'); st.id = 'necro-style';
     st.textContent = `
-.necro-panel{color:var(--ds-text,#e8f0ff);font-family:var(--ds-font-body,'Nunito',sans-serif);font-size:13px;padding:0 0 20px}
+.necro-help { margin: 10px 0 4px; padding: 10px 12px; border-radius: 10px; background: rgba(139,77,255,.10); border: 1px solid rgba(139,77,255,.35); font-size: 13px; line-height: 1.45; } .necro-help ul { margin: 6px 0 0; padding-left: 18px; } .necro-help li { margin: 3px 0; } .necro-panel{color:var(--ds-text,#e8f0ff);font-family:var(--ds-font-body,'Nunito',sans-serif);font-size:13px;padding:0 0 20px}
 .necro-panel *{box-sizing:border-box}
 .necro-ic{display:inline-flex;align-items:center;justify-content:center;line-height:0}.necro-ic svg{display:block}
 .necro-head{position:relative;padding:14px 14px 12px;margin:0 0 12px;overflow:hidden;
@@ -1219,6 +1219,16 @@ window.G = window.G || {};
       const rec = actives[i];
       if (rec) { const c = CATS[rec.cat], ri = rankIdx(rec.rank); html += '<button type="button" class="necro-slot" style="--rk:' + RANK_COLORS[ri] + '" data-act="off" data-uid="' + esc(rec.uid) + '" title="' + esc(servantName(rec) + ' — retirer des actifs') + '" aria-label="' + esc(servantName(rec) + ' : retirer des actifs') + '"><span class="necro-ic">' + catIco(c, 22) + '</span><b>' + esc(rec.rank) + '</b></button>'; }
       else html += '<div class="necro-slot empty" aria-label="Emplacement libre"><span class="necro-ic">' + (ico('plus', 18) || '+') + '</span></div>';
+    }
+    // ---- aide : comment avoir plus de soldats ----
+    {
+      const lv = profile.niveau || 1, nextLv = (Math.floor(lv / 10) + 1) * 10;
+      const key = (() => { try { const eq = profile.skills && profile.skills.equipped || {}; const slot = Object.keys(eq).find(sl => eq[sl] === 'necro_extract'); return slot && G.Keys && G.Keys.labelOf ? G.Keys.labelOf(slot) : ''; } catch (e) { return ''; } })();
+      html += '<div class="necro-help"><b>Comment avoir plus de soldats ?</b><ul>' +
+        '<li><b>Recruter :</b> en donjon, utilise <b>Extraction d\'âme</b>' + (key ? ' (touche <b>' + esc(key) + '</b>)' : '') + ' juste après avoir vaincu un ennemi : son âme peut devenir un serviteur (les boss et élites donnent les meilleurs).</li>' +
+        '<li><b>Plus de places actives</b> (' + ar.active.length + ' / ' + cap + ') : +1 au <b>niveau ' + nextLv + '</b> (puis tous les 10 niveaux), +1 en rang D, +2 en rang B, +3 en A, +4 en S, +1 avec la spécialisation <b>Maître de légion</b>, +1 avec <b>Commandement</b> niveau 5.</li>' +
+        '<li><b>Renforts temporaires :</b> <b>Armée des morts</b> (niveau 20) et l\'ultime <b>Souverain des Ombres</b> (niveau 5) font surgir des soldats en plus de ta limite.</li>' +
+        '</ul></div>';
     }
     html += '</div><label class="necro-opt"><span class="necro-sw"><input type="checkbox" data-act="auto"' + (profile.settings.necroAuto !== false ? ' checked' : '') + '><i></i></span>Extraction automatique (chance réduite)</label></div>';
 

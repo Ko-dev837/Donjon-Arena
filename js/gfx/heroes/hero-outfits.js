@@ -897,13 +897,17 @@ window.G = window.G || {};
       if (style === 'fur') onSeg(X, 'shin' + s, 'shin', s, top - 0.1, top + 0.06, GE.shell({ rt: 0.9, th: 0.3, pl: 9, pa: 0.12, n: 14, jag: 0.15 }), 'fur', c.fur, m.shR0 * 1.55, m.shR0 * 1.5);
       // pied : empeigne + bout + semelle + talon (le pied d'A2 est en +Z depuis la cheville)
       if (!X.R.bones[f]) continue;
-      X.add(f, layer, GE.sph(), col, [0, -fh * 0.25, fl * 0.38], [fw * 2.25, fh * 1.25, fl * 0.95], null, { outline: true });
-      if (!metal) X.add(f, layer, GE.sph(), shade(col, -0.04), [0, -fh * 0.42, fl * 0.66], [fw * 2.1, fh * 0.95, fl * 0.5], null, NO);
-      X.add(f, 'leather', GE.box(), c.leatherD, [0, -fh * 0.88, fl * 0.38], [fw * 2.25, fh * 0.28, fl * 1.12]);
-      X.add(f, 'leather', GE.box(), c.leatherD, [0, -fh * 0.72, -fl * 0.1], [fw * 1.8, fh * 0.5, fl * 0.24]);
+      // chaussure modelée sur le pied du corps (sphère à fond plat, rayon 1) : empeigne + semelle débordante d'un rien + talon
+      // (avant : un œuf trop court posé sur une planche plus longue que lui → « boule sur une planche »)
+      const FG = (G.HeroKit && G.HeroKit.geo && G.HeroKit.geo.foot) || null, fs = FG ? 1 : 2, FOOT = FG || GE.sph();
+      X.add(f, layer, FOOT, col, [0, -fh * 0.22, fl * 0.24], [fw * 1.14 * fs, fh * 0.78 * fs, fl * 0.6 * fs], null, { outline: true });
+      if (!metal) X.add(f, layer, FOOT, shade(col, -0.05), [0, -fh * 0.3, fl * 0.42], [fw * 1.02 * fs, fh * 0.62 * fs, fl * 0.42 * fs], null, NO);
+      X.add(f, 'leather', FOOT, c.leatherD, [0, -fh * 0.6, fl * 0.24], [fw * 1.2 * fs, fh * 0.22 * fs, fl * 0.63 * fs], null, NO);
+      X.add(f, 'leather', GE.box(), c.leatherD, [0, -fh * 0.62, -fl * 0.04], [fw * 1.7, fh * 0.34, fl * 0.2], null, NO);
       if (metal) {
-        for (let i = 0; i < 2; i++) X.add(f, 'metal', GE.shell({ span: 3.0, rt: 0.95, th: 0.18, n: 8 }), shade(col, -0.05 * i), [0, -fh * (0.05 + 0.1 * i), fl * (0.2 + 0.14 * i)], [fw * 2.35, fh * 0.5, fl * 0.6], [-1.2, 0, 0]);
-        X.add(f, 'metal', GE.sphLo(), shade(col, 0.1), [0, -fh * 0.5, fl * 0.84], [fw * 1.9, fh * 0.75, fl * 0.32], null, NO);
+        // lames articulées du soleret (sur le cou-de-pied) + embout
+        for (let i = 0; i < 3; i++) X.add(f, 'metal', GE.shell({ span: 3.0, rt: 0.95, th: 0.18, n: 8 }), shade(col, -0.04 * i), [0, -fh * (0.02 + 0.08 * i), fl * (0.08 + 0.13 * i)], [fw * 2.2, fh * 0.45, fl * 0.42], [-1.25, 0, 0], NO);
+        X.add(f, 'metal', FOOT, shade(col, 0.08), [0, -fh * 0.34, fl * 0.62], [fw * 0.95 * fs, fh * 0.55 * fs, fl * 0.22 * fs], null, NO);
       } else {
         P.stitches(X, f, c.stitch, [-fw * 1.1, -fh * 0.7, fl * 0.15], [-fw * 1.0, -fh * 0.65, fl * 0.75], 4, layer);
         P.stitches(X, f, c.stitch, [fw * 1.1, -fh * 0.7, fl * 0.15], [fw * 1.0, -fh * 0.65, fl * 0.75], 4, layer);
