@@ -718,114 +718,169 @@ window.G = window.G || {};
     return b ? String(b) : '';
   }
 
-  // ---- guide « Comment ça marche ? » de chaque page du camp (ouvert la 1re fois, puis via le bouton ?) ----
+  // ---- tuto en bulles de chaque page du camp (comme le tuto des touches) : 1re visite automatique, puis bouton « ? Aide » ----
   const KEY = (a) => { try { return G.Keys && G.Keys.labelOf ? G.Keys.labelOf(a) : a; } catch (_) { return a; } };
-  const K = (a) => '<span class="ds-kbd">' + esc(KEY(a)) + '</span>';
+  // s : élément visé (1er sélecteur visible) · t : titre · x : texte court (HTML simple)
   const GUIDES = {
     portails: () => [
-      'Un <b>portail</b> = un donjon. Clique sur un portail puis sur <b>Entrer</b> pour lancer la partie.',
-      'La lettre (E, D, C, B, A, S) est la <b>difficulté</b>. Tu ne peux entrer que dans les portails de <b>ton rang</b>.',
-      'En donjon : déplace-toi avec ' + K('up') + K('left') + K('down') + K('right') + ', attaque avec ' + K('cast1') + ', sorts ' + K('cast2') + ' ' + K('cast3') + ', ultime ' + K('super') + ', esquive ' + K('dash') + '.',
-      'Vide chaque salle pour ouvrir la suivante, bats le <b>boss</b> à la fin : tu gagnes de l\u2019XP, de l\u2019or et des objets.',
+      { s: '.pt-card', t: 'Un portail = un donjon', x: 'La lettre est la difficulté. Tu entres seulement dans ceux de ton rang.' },
+      { s: '.pt-go', t: 'Entrer', x: 'Clique ici pour lancer le donjon.' },
+      { s: '.pt-filters', t: 'Filtres', x: 'Affiche tous les portails, ceux disponibles ou les spéciaux.' },
+      { s: '.pt-rkline', t: 'Ton rang', x: 'Monte de rang pour débloquer des portails plus durs.' },
     ],
     heros: () => [
-      'Ici tu vois ton <b>niveau</b>, ton <b>rang</b> et tes statistiques (PV, attaque, défense…).',
-      'Tu gagnes de l\u2019<b>XP</b> en finissant des donjons : chaque niveau te donne <b>1 point de compétence</b>.',
-      'Pour <b>monter de rang</b> : remplis les conditions affichées, puis réussis l\u2019<b>épreuve de promotion</b>. Un rang plus haut ouvre des portails plus durs (et plus rentables).',
+      { s: '.rk-reqs', t: 'Prochain rang', x: 'Remplis ces conditions…' },
+      { s: '.rk-trial', t: 'Épreuve', x: '…puis réussis cette épreuve pour monter de rang.' },
+      { s: '.rk-attr', t: 'Attributs', x: 'Tes points d’attributs : clique sur + pour les répartir.' },
+      { s: '.rk-titles', t: 'Titre', x: 'Choisis le titre affiché sous ton nom.' },
     ],
     competences: () => [
-      'Chaque niveau gagné te donne <b>1 point de compétence</b> (le chiffre rouge sur l\u2019onglet).',
-      'Clique sur une compétence, puis sur <b>Apprendre</b> (ou <b>Améliorer</b>) : ça dépense tes points et la rend plus forte.',
-      'Pour l\u2019utiliser, clique sur <b>Équiper</b> et choisis un emplacement : ' + K('cast2') + ', ' + K('cast3') + ' ou l\u2019ultime ' + K('super') + '. L\u2019attaque de base est sur ' + K('cast1') + '.',
-      'Les nouvelles compétences se débloquent avec ton <b>niveau</b> (5, 10, 15…). Au niveau 15, tu choisis une <b>spécialisation</b>.',
-      'Tu t\u2019es trompé ? <b>Réinitialiser</b> te rend tous tes points contre un peu d\u2019or.',
+      { s: '.sk-points', t: 'Tes points', x: 'Tu gagnes 1 point à chaque niveau.' },
+      { s: '.sk-list, .sk-tl', t: 'Choisis', x: 'Clique sur une compétence pour la voir.' },
+      { s: '.sk-side', t: 'Apprendre', x: '<b>Apprendre</b> / <b>Améliorer</b> dépense tes points. Puis <b>Équiper</b> sur une touche.' },
+      { s: '.sk-kit', t: 'Ton kit', x: 'Tes sorts sur les touches <b>' + esc(KEY('cast1')) + '</b>, <b>' + esc(KEY('cast2')) + '</b>, <b>' + esc(KEY('cast3')) + '</b> et l’ultime <b>' + esc(KEY('super')) + '</b>.' },
+      { s: '[data-act="respec"]', t: 'Réinitialiser', x: 'Rend tous tes points contre un peu d’or.' },
     ],
     dons: () => [
-      'Les <b>dons</b> sont des bonus passifs (plus de dégâts, de vie, de vitesse…).',
-      'Tu en trouves en donjon. Glisse-les ou clique pour les <b>équiper</b> dans tes emplacements ; ton <b>rang</b> donne plus d\u2019emplacements.',
-      'Un don déjà possédé donne des <b>éclats</b> : ils servent à <b>améliorer</b> tes dons. Certains dons ensemble forment une <b>synergie</b>.',
+      { s: '.tl-slots', t: 'Emplacements', x: 'Tes dons équipés. Ton rang en débloque d’autres.' },
+      { s: '.tl-grid', t: 'Collection', x: 'Clique sur un don puis <b>Équiper</b>.' },
+      { s: '.tl-stat.gem', t: 'Éclats', x: 'Les doublons donnent des éclats pour améliorer tes dons.' },
     ],
     inventaire: () => [
-      'Tes armes, armures et bijoux sont ici. Clique sur un objet pour voir ses statistiques, puis <b>Équiper</b>.',
-      'La couleur indique la <b>rareté</b> : commun, rare, épique, légendaire, mythique.',
-      'Les objets que tu n\u2019utilises plus peuvent être <b>recyclés</b> (bouton Recycler) pour récupérer des matériaux ; les matériaux se <b>vendent</b> contre de l\u2019or.',
+      { s: '.inv-doll', t: 'Équipement', x: 'Ce que ton héros porte.' },
+      { s: '.inv-grid, .inv-cap', t: 'Ton sac', x: 'Clique sur un objet pour l’équiper ou le recycler.' },
+      { s: '.inv-tool', t: 'Trier', x: 'Filtre par rareté et trie ton sac.' },
+      { s: '.inv-root > .ds-tabs', t: 'Onglets', x: 'Matériaux à vendre et fabrication d’objets.' },
     ],
     perso: () => [
-      'Change l\u2019<b>apparence</b> de ton héros : choisis un <b>skin</b> pour ta classe.',
-      'Chaque skin indique comment le débloquer (objectif à atteindre ou achat avec de l\u2019or). Ils ne changent pas tes statistiques.',
+      { s: '.cos-tabs', t: 'Apparence', x: 'Skins, auras, cadres, bannières et titres.' },
+      { s: '.cos-grid', t: 'Débloquer', x: 'Chaque carte dit comment l’obtenir.' },
+      { s: '.cos-action', t: 'Équiper', x: 'Valide ton choix ici.' },
     ],
     forge: () => [
-      'La forge améliore tes <b>compétences</b> avec de l\u2019<b>or</b>.',
-      'Chaque branche renforce un groupe de sorts (dégâts, effets, recharges). Clique sur <b>Améliorer</b> quand tu as assez d\u2019or.',
-      'Certains paliers (niveaux 5 et 10) débloquent des effets spéciaux et font briller ton arme.',
+      { s: '.wcard', t: 'Tes pièces', x: 'Chaque pièce renforce tes sorts.' },
+      { s: '.wcard .ds-btn--lg', t: 'Améliorer', x: 'Coûte de l’or : le prix est sur le bouton.' },
+      { s: '.w-perks', t: 'Paliers', x: 'Bonus spécial aux niveaux 5 et 10.' },
     ],
     succes: () => [
-      'Les <b>succès</b> sont des défis : finir des donjons, battre des boss, ne pas prendre de dégâts…',
-      'Chaque succès réussi donne des <b>récompenses</b> (or, bonus, titres). Certains sont nécessaires pour monter de rang.',
+      { s: '.rk-top', t: 'Progression', x: 'Tes succès et titres obtenus.' },
+      { s: '.rk-ach', t: 'Défis', x: 'Réussis-les pour gagner des récompenses.' },
     ],
     boutique: () => [
-      'Achète des <b>potions</b> avec ton or.',
-      'En donjon, bois-les avec ' + K('potion1') + ' et ' + K('potion2') + ' (ou les boutons du HUD sur mobile).',
+      { s: '.shop-item', t: 'Potions', x: 'Achète-les avec ton or.' },
+      { s: '.shop-hero', t: 'En donjon', x: 'Soin : touche <b>' + esc(KEY('potion1')) + '</b> · Mana : touche <b>' + esc(KEY('potion2')) + '</b>.' },
     ],
     guilde: () => [
-      '<b>Créer</b> : choisis un nom, un tag de 3-4 lettres et un emblème, puis <b>Fonder la guilde</b>.',
-      '<b>Rejoindre</b> : demande le <b>code</b> de 6 lettres à un membre (ou scanne son QR code) et clique sur <b>Rejoindre</b>.',
-      'Rôles : <b>Chef</b> > <b>Officier</b> > <b>Membre</b> > <b>Recrue</b>. Le chef gère les rôles dans l\u2019onglet <b>Membres</b>.',
-      'Il faut être <b>connecté à ton compte</b> (onglet En ligne) pour utiliser les guildes.',
+      { s: '.gd-create, .gd-root .ds-card', t: 'Créer', x: 'Nom, tag et emblème, puis <b>Fonder la guilde</b>.' },
+      { s: '.gd-join, .gd-root .ds-card + .ds-card', t: 'Rejoindre', x: 'Entre le code de 6 lettres d’un membre.' },
+      { s: '.gd-root .ds-tabs, .gd-tabs', t: 'Ta guilde', x: 'Membres, discussion, journal et rôles.' },
+      { s: '.gd-root', t: 'Compte', x: 'Il faut être connecté à ton compte (onglet En ligne).' },
     ],
     classement: () => [
-      'Tous les joueurs connectés à leur compte apparaissent ici, triés par <b>rang</b> puis par <b>niveau</b>.',
-      'Monte de niveau et de rang pour grimper ! Les emails ne sont jamais affichés.',
+      { s: '.lb-me', t: 'Ta place', x: 'Ton rang dans le classement.' },
+      { s: '.lb-table', t: 'Joueurs', x: 'Triés par rang puis par niveau.' },
+      { s: '.lb-filter', t: 'Filtrer', x: 'Affiche une seule classe.' },
+      { s: '.lb-wrap', t: 'Classement', x: 'Connecte-toi pour y apparaître.' },
     ],
     enligne: () => [
-      'Connecte-toi avec ton <b>compte Google</b> : ton héros est sauvegardé sur ton compte.',
-      'Ajoute des <b>amis</b> avec leur <b>code ami</b> (ou leur QR code), puis invite-les dans ton groupe.',
-      'En <b>groupe</b>, vous faites les donjons ensemble : le chef du groupe choisit le portail.',
+      { s: '.net-tabs', t: 'En ligne', x: '<b>Compte</b> : connexion · <b>Amis</b> : code ami · <b>Groupe</b> : jouer ensemble.' },
+      { s: '.net-body', t: 'Compte', x: 'Connecte-toi : ton héros est sauvegardé sur ton compte.' },
     ],
     armee: () => [
-      'Tes <b>serviteurs</b> te suivent et se battent pour toi en donjon.',
-      'Clique sur un serviteur pour le mettre en <b>actif</b> ou le retirer ; le nombre de places actives est en haut à droite.',
-      'Pour en avoir plus : utilise <b>Extraction d\u2019âme</b> juste après avoir vaincu un ennemi (détails dans le cadre violet).',
+      { s: '.necro-slots', t: 'Actifs', x: 'Ces serviteurs te suivent en donjon.' },
+      { s: '.necro-list', t: 'Réserve', x: 'Clique <b>Actif</b> / <b>Retirer</b> pour choisir qui vient.' },
+      { s: '.necro-help', t: 'Plus de soldats', x: 'Tout est expliqué ici.' },
     ],
   };
-  const GUIDE_KEY = 'donjon-guides-v1';
-  const guideState = () => { try { return JSON.parse(localStorage.getItem(GUIDE_KEY) || '{}') || {}; } catch (_) { return {}; } };
-  const guideSave = (st) => { try { localStorage.setItem(GUIDE_KEY, JSON.stringify(st)); } catch (_) {} };
-  function renderGuide(def, toggle) {
-    const box = $('camp-guide'); if (!box) return;
-    const fn = def && GUIDES[def.id];
-    if (!fn) { box.hidden = true; box.innerHTML = ''; box._id = null; return; }
-    const st = guideState();
-    if (st[def.id] === undefined) { st[def.id] = 'open'; guideSave(st); }           // première visite : ouvert
-    if (toggle) { st[def.id] = st[def.id] === 'open' ? 'closed' : 'open'; guideSave(st); }
-    const open = st[def.id] === 'open';
-    const hb = document.querySelector('#camp-panel-head .cph-help'); if (hb) { hb.classList.toggle('on', open); hb.setAttribute('aria-expanded', open ? 'true' : 'false'); }
-    if (!open) { box.hidden = true; box.innerHTML = ''; box._id = def.id; return; }
-    let items = []; try { items = fn() || []; } catch (_) { items = []; }
-    box.innerHTML = '<div class="cg-head"><span class="cg-ico">' + ico('tutorial', 18, '?') + '</span><b>Comment ça marche ?</b><button type="button" class="cg-close" data-guide="close" aria-label="Fermer le guide">' + ico('close', 14, '×') + '</button></div>'
-      + '<ol class="cg-list">' + items.map(t => '<li>' + t + '</li>').join('') + '</ol>';
-    box.hidden = false; box._id = def.id;
+  const GUIDE_KEY = 'donjon-guides-v2';
+  const guideSeen = (id) => { try { return !!(JSON.parse(localStorage.getItem(GUIDE_KEY) || '{}') || {})[id]; } catch (_) { return false; } };
+  const guideMark = (id) => { try { const st = JSON.parse(localStorage.getItem(GUIDE_KEY) || '{}') || {}; st[id] = 1; localStorage.setItem(GUIDE_KEY, JSON.stringify(st)); } catch (_) {} };
+  let pc = { id: null, steps: [], i: -1, el: null, tgt: null, t: 0 };
+  const visibleEl = (sel) => { const root = $('camp-panel'); if (!root) return null; for (const part of sel.split(',')) { let list = []; try { list = root.querySelectorAll(part.trim()); } catch (_) { list = []; } for (const el of list) { const r = el.getBoundingClientRect(); if (r.width > 4 && r.height > 4) return el; } } return null; };
+  function stopPageCoach(done) {
+    clearTimeout(pc.t);
+    if (pc.tgt) pc.tgt.classList.remove('pc-target');
+    if (pc.el) pc.el.remove();
+    if (done && pc.id) guideMark(pc.id);
+    pc = { id: null, steps: [], i: -1, el: null, tgt: null, t: 0 };
+  }
+  function startPageCoach(id) {
+    stopPageCoach(false);
+    const fn = GUIDES[id]; if (!fn) return;
+    let steps = []; try { steps = fn() || []; } catch (_) { steps = []; }
+    steps = steps.filter(s => visibleEl(s.s));                    // seulement les bulles dont l'élément est à l'écran
+    if (!steps.length) return;
+    pc.id = id; pc.steps = steps; pc.i = -1;
+    pc.el = document.createElement('div'); pc.el.className = 'page-coach';
+    document.body.appendChild(pc.el);
+    stepPageCoach(1);
+  }
+  function stepPageCoach(d) {
+    if (!pc.el) return;
+    const n = pc.i + d;
+    if (n < 0) return;
+    if (n >= pc.steps.length) { stopPageCoach(true); return; }
+    pc.i = n;
+    const s = pc.steps[n], tgt = visibleEl(s.s);
+    if (pc.tgt) pc.tgt.classList.remove('pc-target');
+    pc.tgt = tgt;
+    if (tgt) { try { tgt.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) { tgt.scrollIntoView(); } tgt.classList.add('pc-target'); }
+    const last = n === pc.steps.length - 1;
+    pc.el.innerHTML = `<div class="coach-bubble ds-anim-pop" role="note"><div class="coach-head"><span class="coach-ico">${ico('tutorial', 18)}</span><b>${esc(s.t)}</b><span class="coach-n">${n + 1}/${pc.steps.length}</span></div><p>${s.x}</p><div class="coach-btns"><button type="button" class="ds-btn ds-btn--ghost ds-btn--sm pc-skip">Passer</button>${n > 0 ? '<button type="button" class="ds-btn ds-btn--ghost ds-btn--sm pc-prev">Retour</button>' : ''}<button type="button" class="ds-btn ds-btn--primary ds-btn--sm pc-next">${last ? 'Compris' : 'Suivant'}</button></div></div>`;
+    const bub = pc.el.firstChild;
+    bub.querySelector('.pc-next').addEventListener('click', () => { sfx('click'); stepPageCoach(1); });
+    bub.querySelector('.pc-skip').addEventListener('click', () => { sfx('click'); stopPageCoach(true); });
+    const pv = bub.querySelector('.pc-prev'); if (pv) pv.addEventListener('click', () => { sfx('click'); stepPageCoach(-1); });
+    clearTimeout(pc.t);
+    pc.t = setTimeout(() => placePageCoach(), tgt ? 320 : 0);      // après le défilement doux
+    placePageCoach();
+  }
+  function placePageCoach() {
+    if (!pc.el || !pc.el.firstChild) return;
+    const bub = pc.el.firstChild, tgt = pc.tgt;
+    const vw = window.innerWidth, vh = window.innerHeight, bw = Math.min(300, vw - 24);
+    bub.style.width = bw + 'px';
+    const bh = bub.offsetHeight || 120;
+    let x, y, arrow = 'none';
+    if (tgt && tgt.isConnected) {
+      const r = tgt.getBoundingClientRect();
+      x = Math.max(12, Math.min(vw - bw - 12, r.left + Math.min(r.width, 360) / 2 - bw / 2));
+      if (r.bottom + bh + 18 < vh) { y = r.bottom + 12; arrow = 'up'; }
+      else if (r.top - bh - 18 > 0) { y = r.top - bh - 12; arrow = 'down'; }
+      else { y = Math.max(12, Math.min(vh - bh - 12, r.top + 12)); }
+      bub.style.setProperty('--ax', Math.max(16, Math.min(bw - 16, r.left + Math.min(r.width, 360) / 2 - x)) + 'px');
+    } else { x = (vw - bw) / 2; y = vh * 0.3; }
+    bub.dataset.arrow = arrow;
+    bub.style.left = x + 'px'; bub.style.top = y + 'px';
+  }
+  function renderGuide(def) {
+    // ancien encadré de texte : remplacé par les bulles
+    const box = $('camp-guide'); if (box) { box.hidden = true; box.innerHTML = ''; }
+    if (pc.id && (!def || pc.id !== def.id)) stopPageCoach(false);
+    if (def && GUIDES[def.id] && !guideSeen(def.id) && pc.id !== def.id) {
+      const id = def.id;
+      setTimeout(() => { if (campTab === id && current === 'hub' && !pc.id) startPageCoach(id); }, 450);   // 1re visite
+    }
   }
   function initGuide() {
-    const box = $('camp-guide'), head = $('camp-panel-head');
-    const onClick = (e) => {
-      const b = e.target.closest('[data-guide]'); if (!b) return;
-      const def = campTab ? panels().get(campTab) : null; if (!def) return;
-      sfx('click'); renderGuide(def, true);
-    };
-    if (box) box.addEventListener('click', onClick);
-    if (head) head.addEventListener('click', onClick);
-    if (G.bus) G.bus.on('keysChanged', () => { const def = campTab ? panels().get(campTab) : null; renderGuide(def, false); });
+    const head = $('camp-panel-head');
+    if (head) head.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-guide]'); if (!b || !campTab) return;
+      sfx('click'); startPageCoach(campTab);
+    });
+    window.addEventListener('resize', () => placePageCoach());
+    const main = $('hub-content'); if (main) main.addEventListener('scroll', () => placePageCoach(), { passive: true });
+    if (G.bus) G.bus.on('screen', (e) => { if (!e || e.id !== 'hub') stopPageCoach(false); });
   }
 
   function renderPanelHead(def) {
     const h = $('camp-panel-head');
     if (!h) return;
     const sig = def ? def.id + '|' + def.title : '';
-    if (h._sig === sig) { renderGuide(def, false); return; }
+    if (h._sig === sig) { renderGuide(def); return; }
     h._sig = sig;
     h.innerHTML = def ? `<span class="cph-ico">${tabIcon(def, 20)}</span><h2 class="cph-title">${esc(def.title || def.id)}</h2><span class="cph-line"></span>` + (GUIDES[def.id] ? `<button type="button" class="cph-help ds-btn ds-btn--ghost ds-btn--sm" data-guide="toggle" aria-label="Comment ça marche ?"><span class="ds-btn__label">? Aide</span></button>` : '') : '';
-    renderGuide(def, false);
+    renderGuide(def);
   }
   function renderPanel(dir) {
     const host = $('camp-panel'), main = $('hub-content');
