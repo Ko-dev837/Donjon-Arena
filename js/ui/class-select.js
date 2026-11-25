@@ -1080,6 +1080,7 @@ window.G = window.G || {};
   function snapshot() { return I ? { sel: I.sel, name: I.els.name.value, aw: I.aw, rolled: I.aw.rolled } : null; }
   function isNecroUnlocked(o) {
     if (o.necroUnlocked) return true;
+    try { if (G.Online && G.Online.hasGrant && G.Online.hasGrant('necromancien')) { I.granted = true; return true; } } catch (_) {}
     const p = o.profile;
     try { if (G.Necro && G.Necro.isUnlocked && G.Necro.isUnlocked(p)) return true; } catch (_) {}
     return !!(p && (p.classe === 'Necromancien' || (p.unlockedClasses && p.unlockedClasses.indexOf('Necromancien') >= 0)));
@@ -1399,7 +1400,7 @@ window.G = window.G || {};
     const nom = I.els.name.value.trim().slice(0, 14);
     if (!nom) { I.els.name.focus(); return warn('Donne un nom à ton héros.'); }
     if (I.rit) finishRitual(true);
-    const cb = I.opts.onConfirm, id = I.sel, extra = { awakening: { rolled: !!I.aw.rolled, won: !!I.aw.won } };
+    const cb = I.opts.onConfirm, id = I.sel, extra = { awakening: { rolled: !!I.aw.rolled, won: !!I.aw.won }, granted: id === 'Necromancien' && !!I.granted };
     if (G.sfx && G.sfx.play) { try { G.sfx.play('upgrade'); } catch (_) {} }
     let keep = false;
     try { keep = cb && cb(id, nom, extra) === false; } catch (e) { keep = true; if (window.console) console.error(e); }
@@ -1430,6 +1431,8 @@ window.G = window.G || {};
     select(id) { if (I && IDS.indexOf(id) >= 0) onPick(id); },
     selected: () => (I ? I.sel : null),
     demoNecro() { if (!I) return; Aud.ensure(); if (I.rit) finishRitual(true); unlockNecro(); banner(`<b>ÉVEIL !</b><span>Une classe secrète répond à ton appel…</span>`, 'win', 3.2); I.sel = null; play('Necromancien', { fromRitual: true }); },
+    /** Récompense « grants » du compte en ligne : débloque le Nécromancien pendant la création */
+    grantNecro() { if (!I) return false; I.granted = true; if (I.necroUnlocked) return true; unlockNecro(); updateRitualBtn(); updateCount(); banner(`<b>RÉCOMPENSE</b><span>Classe Nécromancien débloquée sur ton compte</span>`, 'win', 3.2); return true; },
     awakening: () => (I ? { rolled: !!I.aw.rolled, won: !!I.aw.won } : null),
     _debug: () => (I ? { parts: I.parts.length, cues: I.cues.length, raf: I.raf, ticks: I.ticks.length, clock: I.clock, t3: !!I.t3, buses: Aud.buses.length } : null),
   };

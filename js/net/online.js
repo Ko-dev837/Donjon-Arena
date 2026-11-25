@@ -183,7 +183,7 @@ window.G = window.G || {};
   function stopSocial() { socialOff.forEach(f => { try { f(); } catch (_) { /* rien */ } }); socialOff = []; }
   async function onAuth(u) {
     stopSocial();
-    if (!u) { O.user = null; O.me = null; O.friends = []; O.requests = []; O.invites = []; O.guild = null; O.guildMembers = []; O.chat = []; O.guildLog = []; watchGuild(null); changed('auth'); return; }
+    if (!u) { O.grants = null; O.user = null; O.me = null; O.friends = []; O.requests = []; O.invites = []; O.guild = null; O.guildMembers = []; O.chat = []; O.guildLog = []; watchGuild(null); changed('auth'); return; }
     O.user = { uid: u.uid, name: cleanName(u.displayName || 'Joueur'), photo: u.photoURL || null };
     O.error = null; O.profileError = null;
     try { await ensureUserDoc(); }
@@ -204,25 +204,39 @@ window.G = window.G || {};
   }
   // ---- récompenses accordées par l'administrateur (Realtime Database : /grants/{uid}, écriture console uniquement) ----
   // ex. grants/<uid>/necromancien = true  → débloque la classe Nécromancien et propose de convertir le héros actuel
+  const GRANT_KEY = 'donjon-grants-v1';
+  O.grants = null;
+  try { const c = JSON.parse(localStorage.getItem(GRANT_KEY) || 'null'); if (c && c.uid && c.g) O._grantCache = c; } catch (_) { /* rien */ }
+  /** true si le compte connecté (ou le dernier compte connecté sur cet appareil) a reçu la récompense k */
+  O.hasGrant = function (k) {
+    if (O.grants) return O.grants[k] === true;
+    const c = O._grantCache;
+    return !!(c && c.g && c.g[k] === true && (!O.user || O.user.uid === c.uid));
+  };
   async function applyGrants() {
     if (!O.db || !O.user || O.db.kind !== 'firebase') return;
-    let g = null;
-    try { g = await O.db.get('grants/' + O.user.uid); } catch (e) { return; }
-    if (!g || typeof g !== 'object') return;
+    let g = O.grants;
+    if (!g) {
+      try { g = await O.db.get('grants/' + O.user.uid); } catch (e) { console.warn('[Online] grants', e); return; }
+      g = (g && typeof g === 'object') ? g : {};
+      O.grants = g;
+      try { localStorage.setItem(GRANT_KEY, JSON.stringify({ uid: O.user.uid, g })); O._grantCache = { uid: O.user.uid, g }; } catch (_) { /* rien */ }
+      changed('grants');
+    }
+    if (g.necromancien !== true) return;
+    // écran de création ouvert : la carte secrète se déverrouille tout de suite
+    let creating = false;
+    try { if (G.ClassSelect && G.ClassSelect.isMounted && G.ClassSelect.isMounted()) { creating = true; G.ClassSelect.grantNecro(); } } catch (_) { /* rien */ }
+    if (creating) { applyGrants.tries = (applyGrants.tries || 0) + 1; if (applyGrants.tries < 400) setTimeout(applyGrants, 3000); return; } // pas de pop-up de conversion pendant la création
     const pr = G.game && G.game.profile;
     if (!pr || !pr.classe) { applyGrants.tries = (applyGrants.tries || 0) + 1; if (applyGrants.tries < 120) setTimeout(applyGrants, 3000); return; } // héros pas encore chargé : on réessaie
     pr.grantsApplied = pr.grantsApplied || {};
-    if (g.necromancien && !pr.grantsApplied.necromancien && G.Necro) {
+    if (!pr.grantsApplied.necromancien && G.Necro) {
       pr.grantsApplied.necromancien = true;
-      try {
-        G.Necro.ensureProfile(pr);
-        pr.awakening.unlocked = true;
-        const already = pr.classe === 'Necromancien';
-        if (!already) pr.awakening.pending = true;
-        if (G.game.saveProfile) G.game.saveProfile();
-        if (G.UI && G.UI.toast) G.UI.toast('Récompense reçue : classe Nécromancien débloquée !', 'success');
-        if (!already && G.Necro.offerConversion) setTimeout(() => { try { G.Necro.offerConversion(pr); } catch (_) {} }, 600);
-      } catch (e) { console.warn('[Online] récompense', e); }
+      G.Necro.ensureProfile(pr); pr.awakening.unlocked = true;
+      const already = pr.classe === 'Necromancien'; if (!already) pr.awakening.pending = true;
+      G.game.saveProfile(); G.UI.toast('Récompense reçue : classe Nécromancien débloquée !', 'success');
+      if (!already) setTimeout(() => G.Necro.offerConversion(pr), 600);
     }
   }
   O.applyGrants = applyGrants;

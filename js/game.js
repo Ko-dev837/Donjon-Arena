@@ -474,7 +474,8 @@ window.G = window.G || {};
       const ids = classIds();
       const cls = ids.includes(classId) ? classId : ids[0];
       const aw = extra && extra.awakening;
-      const won = !!(aw && aw.won);
+      const granted = !!(extra && extra.granted && G.Online && G.Online.hasGrant && G.Online.hasGrant('necromancien'));
+      const won = !!(aw && aw.won) || (cls === 'Necromancien' && granted);
       if (cls === 'Necromancien' && !won) { sfx('error'); toast('Classe secrète : non obtenue.'); return; }
       const n = String(nom || '').trim().slice(0, 16) || 'Héros';
       profile = defaultProfile(n, cls);
@@ -484,6 +485,7 @@ window.G = window.G || {};
           history: aw.rolled ? [{ at: Date.now(), result: won ? 'won' : 'lost' }] : [],
         };
         if (won) { profile.awakening.won = true; profile.awakening.necroUnlocked = true; }
+        if (granted) { profile.grantsApplied = { necromancien: true }; profile.awakening.unlocked = true; }
       }
       ensureAll(profile);
       grantKit(profile);
