@@ -258,7 +258,8 @@ window.G = window.G || {};
     bow: poseBuf({ armL: [0.0, 0, 0.2], forearmL: [-1.0, 0, 0], armR: [-0.2, 0, -0.15], forearmR: [-0.8, 0, 0], chest: [0, -0.2, 0], head: [0, 0.22, 0], legL: [-0.12, 0, 0.08], legR: [0.1, 0, -0.05], shinR: [0.12, 0, 0] }),
     mace: poseBuf({ armR: [0.05, 0.05, 0.05], forearmR: [-0.7, 0, 0], armL: [-0.45, -0.15, 0.3], forearmL: [-1.35, 0, 0], chest: [-0.07, 0, 0], head: [-0.08, -0.05, 0], legL: [-0.1, 0, 0.04] }),
     scepter: poseBuf({ armR: [-0.05, 0, 0.04], forearmR: [-0.45, 0, 0], armL: [-0.4, 0, 0.6], forearmL: [-0.7, 0, 0], wristL: [-0.6, 0, 0], chest: [-0.05, 0.12, 0], head: [-0.05, -0.15, 0.06] }),
-    scythe: poseBuf({ armR: [-0.15, 0.1, -0.25], forearmR: [-1.0, 0.25, 0], armL: [-0.85, -0.55, 0.05], forearmL: [-1.0, 0, 0], chest: [0.1, -0.2, 0], head: [0.08, 0.2, 0.1], legL: [-0.15, 0, 0.06], shinL: [0.15, 0, 0] }),
+    // faux tenue droite sur le côté (façon faucheuse) : le fût et la lame ne passent plus devant le visage
+    scythe: poseBuf({ armR: [-0.05, 0, 0.16], forearmR: [-0.45, 0, 0], armL: [-0.35, 0, 0.18], forearmL: [-1.1, 0, 0], wristL: [-0.2, 0, 0], chest: [-0.04, 0.06, 0], head: [0.06, -0.08, 0.06], legL: [-0.1, 0, 0.05], legR: [0.08, 0, -0.04] }),
   };
   // geste de présentation (sélection de classe) par style
   const PRESENT = {
@@ -306,7 +307,7 @@ window.G = window.G || {};
     return y3 * ty + z3 * tz;
   }
   // angle de l'arme voulu (somme des x bras + avant-bras + poignet) : [main droite, main gauche] ; null = libre
-  const GRIP = { sword: [-0.75, null], mace: [-1.3, null], staff: [-1.57, null], scepter: [-1.5, null], twin: [-0.8, -0.8], throw: [-0.8, null], scythe: [-1.4, null], bow: [null, -1.57] };
+  const GRIP = { sword: [-0.75, null], mace: [-1.3, null], staff: [-1.57, null], scepter: [-1.5, null], twin: [-0.8, -0.8], throw: [-0.8, null], scythe: [-1.55, null], bow: [null, -1.57] };
 
   // ------------------------------------------------------------------ état par héros
   function boneOf(root, ud, name) {

@@ -334,7 +334,8 @@ window.G = window.G || {};
         ? [[0, hw], [0.15, hw * 1.15], [0.3, hw * 0.85], [0.45, hw * 1.05], [0.6, hw * 0.75], [0.75, hw * 0.7], [0.9, hw * 0.35], [1, 0]]
         : [[0, hw], [0.25, hw * 1.1], [0.5, hw * 0.95], [0.75, hw * 0.6], [0.9, hw * 0.3], [1, 0]];
       const g = GE.blade('scythe2|' + (bl.style || 's') + '|' + cur.toFixed(2) + '|' + hw.toFixed(3), prof, cur, 0);
-      const RB = alignEuler([0, -1, 0], [0, 0, 1]);
+      // lame vers l'extérieur, plan vertical : le croissant retombe sur le côté, jamais devant le visage
+      const RB = alignEuler([-1, 0, 0], [0, -1, 0]);
       add(B, bL === 'bone' ? 'bone' : 'blade', g, bcol, [0, 0, z1 - 0.08], [sx, blen, 0.03], RB);
       if (bl.edgeGlow) {
         // fil lumineux le long du bord intérieur (côté concave), même courbe que la lame
