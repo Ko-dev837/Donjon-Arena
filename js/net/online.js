@@ -284,9 +284,11 @@ window.G = window.G || {};
     syncProfileSoon();
   }
   function watchMe() {
-    const off = fb.fs.collection('users').doc(O.user.uid).onSnapshot(s => {
+    const off = fb.fs.collection('users').doc(O.user.uid).onSnapshot({ includeMetadataChanges: true }, s => {
       O.me = s.exists ? s.data() : O.me;
-      watchGuild(O.me && O.me.guildId);
+      // écriture locale pas encore confirmée par le serveur (ex. on vient de rejoindre) : on attend la confirmation
+      // avant d'ouvrir la guilde, sinon le serveur refuse la lecture (membre pas encore créé) et on se retrouvait éjecté
+      if (!(s.metadata && s.metadata.hasPendingWrites)) watchGuild(O.me && O.me.guildId);
       changed('me');
     }, e => console.warn('[Online] profil', e && e.code));
     socialOff.push(off);
@@ -456,7 +458,17 @@ window.G = window.G || {};
     if (!gid) { changed('guild'); return; }
     const g = fb.fs.collection('guilds').doc(gid);
     // guilde dissoute ou accès retiré (exclusion) : on libère le profil pour pouvoir en rejoindre une autre
-    const lost = e => { O.guild = null; O.guildMembers = []; changed('guild'); if (!e || /permission/i.test(String(e.code || e.message || ''))) clearMyGuildId(); };
+    let lostOnce = false;
+    const lost = e => {
+      if (lostOnce || guildId !== gid) return; lostOnce = true;
+      O.guild = null; O.guildMembers = []; changed('guild');
+      if (e && !/permission/i.test(String(e.code || e.message || ''))) return;
+      // on ne libère le profil que si le serveur confirme qu'on n'est plus membre (exclu ou guilde dissoute)
+      g.collection('members').doc(O.user.uid).get({ source: 'server' }).then(m => {
+        if (m.exists) { guildId = null; setTimeout(() => { if (O.me && O.me.guildId === gid) watchGuild(gid); }, 1500); }   // simple décalage : on réessaie
+        else clearMyGuildId();
+      }).catch(() => clearMyGuildId());
+    };
     guildOff.push(g.onSnapshot(s => { if (!s.exists) return lost(); O.guild = normGuild(gid, s.data()); changed('guild'); }, lost));
     const presence = {}, info = {}, watched = {};
     const apply = m => {
@@ -565,6 +577,14 @@ window.G = window.G || {};
     if (!c.exists) { toast('Code de guilde introuvable.'); return false; }
     if (c.data().open === false) { toast('Le recrutement de cette guilde est fermé.'); return false; }
     const gid = c.data().gid, ts = FV().serverTimestamp();
+    // déjà inscrit dans cette guilde (profil désynchronisé) : on répare simplement le lien
+    let already = null;
+    try { already = await fb.fs.collection('guilds').doc(gid).collection('members').doc(O.user.uid).get({ source: 'server' }); } catch (_) { already = null; }
+    if (already && already.exists) {
+      await fb.fs.collection('users').doc(O.user.uid).set({ guildId: gid }, { merge: true });
+      toast('Tu fais déjà partie de cette guilde : elle est de retour !');
+      return true;
+    }
     const b = fb.fs.batch();
     b.set(fb.fs.collection('guilds').doc(gid).collection('members').doc(O.user.uid), { name: pseudo(), role: 'recrue', code, joined: ts, lastMsg: ts });
     b.set(fb.fs.collection('users').doc(O.user.uid), { guildId: gid }, { merge: true });
