@@ -162,11 +162,11 @@ window.G = window.G || {};
 
     // ---------------------------------------------------------------- 4. DÉSERT DE VERRE
     D('desert_verre', make({
-      name: 'Désert de Verre', bg: 0x0e0a06, fog: [16, 48], sky: 0xffe0a0, ground: 0x3a2a14, sun: 0xfff0c0, hemiI: 0.22, sunI: 0.2, dark: 0.45, amb: 'amb_observatoire', mus: 'mus_temple',
-      P: { wall: 0xb08a54, sand: 0xc8a060, floor: 0xa88050, accent: 0xfff0a0, glass: 0x9ae0e8, stone: 0xc0a070, outer: 0x1a120a, doorFrame: 0xb08a54, doorWood: 0x8a6a3a, doorBand: 0xffd86a, doorKey: 0xfff0a0, doorOpen: 0xffffc0, secret: 0xfff4b0 },
+      name: 'Désert de Verre', bg: 0x0e0a06, fog: [16, 48], sky: 0xd8b880, ground: 0x2a1c0c, sun: 0xffe0b0, hemiI: 0.08, sunI: 0.07, dark: 0.6, amb: 'amb_observatoire', mus: 'mus_temple',
+      P: { wall: 0x7a5a34, sand: 0x8a6a3c, floor: 0x6a5030, accent: 0xffd870, glass: 0x7ac8d8, stone: 0x8a7048, outer: 0x1a120a, doorFrame: 0xb08a54, doorWood: 0x8a6a3a, doorBand: 0xffd86a, doorKey: 0xfff0a0, doorOpen: 0xffffc0, secret: 0xfff4b0 },
       layouts: ['dunes', 'obelisques', 'ruines', 'oasis'], gens: ['scatter', 'pillars', 'ring', 'islands'], wallH: 3.2, door: 'dalle', pulse: { amp: 0.2, speed: 0.7 },
-      parts: [[50, 0xe8c890, 0.07, 'dust', { op: 0.5, additive: false }], [12, 0xfff0a0, 0.06, 'stars', { op: 0.7 }]],
-      floor(g, w, h, rnd, K, P) { g.fillStyle = K.css(P.floor); g.fillRect(0, 0, w, h); K.P2.blobs(g, w, h, rnd, 40, 0xc09858, 30, 80, 0.4); K.P2.noise(g, w, h, rnd, 2400, [0xb89060, 0x90703a, 0xd8b070], 1, 3, 0.5); K.P2.noise(g, w, h, rnd, 160, [0x9ae0e8, 0xd0f0ff], 2, 5, 0.6); K.P2.vignette(g, w, h, 0.45); },
+      parts: [[40, 0xc8a870, 0.07, 'dust', { op: 0.35, additive: false }], [10, 0xffe0a0, 0.06, 'stars', { op: 0.5 }]],
+      floor(g, w, h, rnd, K, P) { g.fillStyle = K.css(P.floor); g.fillRect(0, 0, w, h); K.P2.blobs(g, w, h, rnd, 40, 0x7a5c34, 30, 80, 0.4); K.P2.noise(g, w, h, rnd, 2400, [0x7a6040, 0x5a4428, 0x9a7a4a], 1, 3, 0.5); K.P2.noise(g, w, h, rnd, 160, [0x9ae0e8, 0xd0f0ff], 2, 5, 0.6); K.P2.vignette(g, w, h, 0.45); },
       props(K, P) {
         const obelisk = (ctx, x, z) => { ctx.add(K.G_BOX, P.stone, [x, 0.3, z], [1.4, 0.6, 1.4]); ctx.add(K.G_BOX, K.jit(P.stone, ctx.rnd, 0.08), [x, 2.2, z], [0.7, 3.4, 0.7]); ctx.add(K.G_CONE4, P.accent, [x, 4.1, z], [0.5, 0.6, 0.5], [0, Math.PI / 4, 0]); ctx.glow(K.G_BOX, 0xffd86a, [x, 2.2, z + 0.36], [0.2, 2.4, 0.02]); ctx.obs(x, z, 0.75, 0.75); };
         const glassShard = (ctx, x, z) => { for (let i = 0; i < 3; i++) ctx.glow(K.G_OCTA, P.glass, [x + ctx.r(-0.5, 0.5), ctx.r(0.4, 1.0), z + ctx.r(-0.5, 0.5)], [0.25, ctx.r(0.6, 1.3), 0.25], [ctx.r(-0.3, 0.3), ctx.rnd() * 3, ctx.r(-0.3, 0.3)]); ctx.add(K.G_SPH, P.sand, [x, 0, z], [1.2, 0.4, 1.0], null, false); ctx.obs(x, z, 0.7, 0.6); };
@@ -184,7 +184,7 @@ window.G = window.G || {};
               if (ctx.rnd() < 0.35) ctx.add(K.G_BOX, P.stone, [p[0], H * 0.5, p[1]], [0.6, H, 0.6]);
             });
           },
-          light(ctx, x, z) { ctx.glow(K.G_OCTA, 0xfff4c0, [x, 2.8, z], [0.2, 0.3, 0.2]); return K.addLight(ctx, x, 2.8, z, 0xffe0a0, 1.6, 11, { flicker: 0.1, speed: 2 }); },
+          light(ctx, x, z) { ctx.glow(K.G_OCTA, 0xfff4c0, [x, 2.8, z], [0.2, 0.3, 0.2]); return K.addLight(ctx, x, 2.8, z, 0xffd090, 1.15, 10, { flicker: 0.1, speed: 2 }); },
         };
       },
     }), 'Dunes dorées, éclats de verre, obélisques, têtes de statues ensablées, oasis.');
