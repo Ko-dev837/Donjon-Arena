@@ -1009,3 +1009,63 @@ html.ds-reduce-motion .hb-ring, html.ds-reduce-motion .logo-l2::after, html.ds-r
 @keyframes rhTurn { 0%, 20% { transform: rotate(0deg); } 50%, 80% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
 html.is-portrait-blocked body { overflow: hidden; }
 @media (max-height: 520px) and (orientation: landscape) { .title-foot { display: none; } .title-save { margin-top: 4px; } }
+
+/* =====================================================================
+   TÉLÉPHONE À L'HORIZONTALE (hauteur ≤ 520 px) — camp compact et lisible
+   bandeau sur une ligne, barre d'onglets en bas (même sur les grands téléphones ≥ 900 px de large),
+   bulles d'aide plus petites, contenu au maximum de la hauteur
+   ===================================================================== */
+@media (max-height: 520px) and (orientation: landscape) {
+  .camp { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "head" "main" "tabs"; }
+  .camp-head { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "pt id res btns"; gap: 0 10px; padding: 4px 8px 4px 6px;
+    margin: max(4px, var(--sa-t)) calc(var(--sa-r) + 6px) 0 calc(var(--sa-l) + 6px); }
+  .ch-portrait { width: 36px; height: 36px; overflow: visible; }
+  .ch-portrait > * { transform: scale(.82); transform-origin: top left; }
+  .ch-id { gap: 1px; }
+  .ch-line1 { gap: 6px; }
+  .ch-name { font-size: 15px; }
+  .ch-class { font-size: 11px; gap: 5px; }
+  .ch-xp { max-width: 260px; }
+  .ch-xp-t { display: none; }
+  .ch-res { flex-wrap: nowrap; justify-content: flex-end; gap: 4px; }
+  .ch-res .ds-chip { min-height: 24px; padding: 0 8px; gap: 4px; font-size: 11.5px; }
+  .ch-btns { align-self: center; gap: 4px; }
+  .ch-btns .ds-icon-btn { width: 32px; height: 32px; min-width: 32px; }
+  .camp-tabs { flex-direction: row; gap: 1px; margin: 0; max-height: none; border-radius: 0; align-self: stretch;
+    overflow-x: auto; overflow-y: hidden; padding: 2px calc(var(--sa-r) + 4px) max(2px, var(--sa-b)) calc(var(--sa-l) + 4px);
+    background: linear-gradient(180deg, rgba(9, 14, 30, .94), rgba(6, 9, 20, .98)); box-shadow: inset 0 1px 0 var(--ds-line-strong); }
+  .ctab { flex: 1 0 56px; min-width: 56px; max-width: 120px; min-height: 44px; flex-direction: column; justify-content: center; gap: 3px; padding: 3px 2px; }
+  .ctab .ct-ico { height: 20px; }
+  .ctab .ct-ico svg { width: 20px; height: 20px; }
+  .ctab .ct-lbl { display: none; }
+  .ctab .ct-lbl-s { display: block; font-size: 9.5px; letter-spacing: .04em; }
+  .ctab::before { left: 22%; right: 22%; top: 0; bottom: auto; width: auto; height: 2px; border-radius: 0 0 2px 2px; transform: scaleX(0); }
+  .ctab.on::before { transform: scaleX(1); }
+  .ctab.on .ct-ico { transform: translateY(-1px) scale(1.06); }
+  .ct-badge { position: absolute; top: 2px; right: calc(50% - 20px); margin: 0; }
+  .ct-badge.dot { top: 4px; right: calc(50% - 15px); margin: 0; }
+  .camp-main { padding: 8px calc(var(--sa-r) + 10px) 12px calc(var(--sa-l) + 10px); }
+  .camp-panel-head { margin: 0 0 8px; gap: 8px; }
+  .cph-ico { width: 26px; height: 26px; }
+  .cph-ico svg { width: 15px; height: 15px; }
+  .cph-title { font-size: 14px; letter-spacing: .1em; }
+  .cph-help { min-height: 28px; padding: 0 10px; font-size: 11px; }
+  /* bulles d'aide : petites, jamais plus larges qu'un tiers d'écran */
+  .coach-bubble { max-width: min(280px, 40vw); padding: 8px 10px; border-radius: 9px; }
+  .coach-head { margin-bottom: 2px; gap: 6px; }
+  .coach-head b { font-size: 12px; }
+  .coach-bubble p { font-size: 12px; line-height: 1.35; margin: 0 0 6px; }
+  .coach-btns .ds-btn { min-height: 30px; padding: 0 10px; font-size: 11px; }
+  /* fenêtres modales : tiennent dans la hauteur */
+  .ds-modal, .modal-card, .ds-dialog { max-height: calc(100vh - 16px); overflow-y: auto; }
+}
+
+/* joystick fantôme (téléphone) : montre où poser le pouce pour se déplacer */
+#joy-ghost { position: absolute; left: calc(var(--sa-l) + 28px); bottom: calc(var(--sa-b) + 26px); width: 112px; height: 112px; border-radius: 50%; pointer-events: none; display: none;
+  background: radial-gradient(circle, rgba(70, 212, 255, .05) 30%, rgba(70, 212, 255, .13) 70%, rgba(70, 212, 255, .03)); box-shadow: inset 0 0 0 2px rgba(130, 220, 255, .28); }
+#joy-ghost::before { content: ''; position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgba(160, 230, 255, .22); box-shadow: inset 0 0 0 2px rgba(220, 245, 255, .45); animation: joyHint 2.4s ease-in-out infinite; }
+#joy-ghost span { position: absolute; left: 50%; bottom: -20px; transform: translateX(-50%); white-space: nowrap; font: 700 11px/1 var(--ds-font-display); letter-spacing: .06em; text-transform: uppercase; color: rgba(200, 238, 255, .8); text-shadow: 0 1px 3px #000; }
+@keyframes joyHint { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(22px, -10px); } 50% { transform: translate(0, 0); } 75% { transform: translate(-20px, 12px); } }
+@media (pointer: coarse) { #joy-ghost { display: block; } }
+html.joy-on #joy-ghost, html.joy-known #joy-ghost span { display: none; }
+html.joy-known #joy-ghost::before { animation: none; }

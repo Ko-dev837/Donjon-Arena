@@ -276,6 +276,9 @@ window.G = window.G || {};
     joy.id = e.pointerId; joy.x = e.clientX; joy.y = e.clientY; joy.dx = joy.dy = 0;
     joyBase.style.left = e.clientX + 'px'; joyBase.style.top = e.clientY + 'px';
     joyBase.style.display = 'block'; joyKnob.style.transform = '';
+    document.documentElement.classList.add('joy-on');
+    // après quelques déplacements, le fantôme garde son anneau mais perd son texte
+    try { const n = +(localStorage.getItem('donjon-joy-uses') || 0) + 1; localStorage.setItem('donjon-joy-uses', String(n)); if (n >= 6) document.documentElement.classList.add('joy-known'); } catch (_) { /* rien */ }
   });
   addEventListener('pointermove', e => {
     if (e.pointerType === 'mouse' && e.target === canvas) {
@@ -289,7 +292,15 @@ window.G = window.G || {};
     joy.dx = dx / max; joy.dy = dy / max;
     joyKnob.style.transform = `translate(${dx}px,${dy}px)`;
   });
-  const endJoy = e => { if (e.pointerId === joy.id) { joy.id = null; joy.dx = joy.dy = 0; joyBase.style.display = 'none'; } };
+  const endJoy = e => { if (e.pointerId === joy.id) { joy.id = null; joy.dx = joy.dy = 0; joyBase.style.display = 'none'; document.documentElement.classList.remove('joy-on'); } };
+  // joystick fantôme dans le HUD (téléphone) : indique la zone du pouce gauche
+  const addGhost = () => {
+    const hud = document.getElementById('hud'); if (!hud || document.getElementById('joy-ghost')) return;
+    const g = document.createElement('div'); g.id = 'joy-ghost'; g.setAttribute('aria-hidden', 'true'); g.innerHTML = '<span>Glisse pour bouger</span>';
+    hud.appendChild(g);
+    try { if (+(localStorage.getItem('donjon-joy-uses') || 0) >= 6) document.documentElement.classList.add('joy-known'); } catch (_) { /* rien */ }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addGhost); else addGhost();
   addEventListener('pointerup', endJoy);
   addEventListener('pointercancel', endJoy);
 
