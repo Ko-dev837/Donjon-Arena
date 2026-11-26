@@ -311,7 +311,17 @@ window.G = window.G || {};
     if (a && a.damage) { try { a.damage(e, (e.pvMax || 1) * 50 + 999, { canCrit: false, source: 'boss', tags: ['boss_add_cleanup'] }); } catch (er) { /* ignore */ } }
     if (!e.dead) { e.pv = 0; }
   }
-  function heal(boss, frac) { boss.pv = Math.min(boss.pvMax, boss.pv + boss.pvMax * frac); }
+  // soins des boss PLAFONNÉS : jamais plus de 0,25 % de PV max par seconde (0,1 % s'il vient d'être touché),
+  // sinon certains boss (canaux, racines, chandeliers…) se soignaient plus vite que les dégâts des joueurs → invincibles
+  function heal(boss, frac) {
+    if (!(frac > 0) || !boss || boss.dead) return;
+    const st = state(boss), now = S.time;
+    if (!st.healWin || now - st.healWin.t0 >= 1) st.healWin = { t0: now, used: 0 };
+    const cap = (now - (st.lastHit || -99) < 2.5 ? 0.001 : 0.0025) - st.healWin.used;
+    const f = Math.min(frac, Math.max(0, cap)); if (f <= 0) return;
+    st.healWin.used += f;
+    boss.pv = Math.min(boss.pvMax, boss.pv + boss.pvMax * f);
+  }
   function stagger(boss, sec, quiet) {
     const st = state(boss);
     st.staggerUntil = S.time + sec;
@@ -1509,8 +1519,8 @@ window.G = window.G || {};
     init(b, st, m) { m.used = 0; m.until = 0; },
     update(b, dt, st, m, ph) {
       const links = st.links && (st.links.linksniche || 0);
-      if (S.time < m.until) { b.pv = Math.min(b.pvMax * 0.5, b.pv + b.pvMax * 0.09 * dt); setArmor(b, 'pile', 0.03); return; } else setArmor(b, 'pile', null);
-      if (links > 0 && b.pv <= b.pvMax * 0.06 && !b.dead) { m.used++; m.until = S.time + 3.5; say(b.pos, 'LES OS SE RÉASSEMBLENT !', 0xd8d0c0, 'reas', 1); vfx('shadowRise', b.pos.x, b.pos.z, 0xd8d0c0, 4); sfx('bossRoar'); stagger(b, 0.1, true); }
+      if (S.time < m.until) { b.pv = Math.min(b.pvMax * 0.3, b.pv + b.pvMax * 0.05 * dt); setArmor(b, 'pile', 0.03); return; } else setArmor(b, 'pile', null);
+      if (links > 0 && m.used < 2 && b.pv <= b.pvMax * 0.06 && !b.dead) { m.used++; m.until = S.time + 3.5; say(b.pos, 'LES OS SE RÉASSEMBLENT !', 0xd8d0c0, 'reas', 1); vfx('shadowRise', b.pos.x, b.pos.z, 0xd8d0c0, 4); sfx('bossRoar'); stagger(b, 0.1, true); }
     },
   };
 
@@ -2061,7 +2071,7 @@ window.G = window.G || {};
       return d;
     }
     const st = t.__ba; if (!st || !t.boss) return d;
-    let m = 1; const now = S.time;
+    let m = 1; const now = S.time; st.lastHit = now;
     if (st.shieldOn) { m *= 0.04; say(t.pos, 'BOUCLIER', 0x6ae6ff, 'shld', 1.5); }
     if (now < st.staggerUntil) m *= 1.5;
     if (st.frontal && now >= st.staggerUntil) {
@@ -2073,6 +2083,8 @@ window.G = window.G || {};
     if (st.lightFn && !st.lightFn()) m *= 0.3;
     if (st.hidden) { if (d.element === 'feu' || d.element === 'foudre' || d.element === 'sacre') setHidden(t, false); else m *= 0.15; }
     if (st.riposte) { m *= 0.1; if (now - (st.ripAt || -9) > 0.6) { st.ripAt = now; hurt(t, D(t, 0.7), (t.def && t.def.element) || 'physique'); say(ppos(), 'RIPOSTE !', 0xff4a4a, 'rip2', 0.5); } }
+    // plancher : quelles que soient les protections cumulées, au moins 30 % des dégâts passent (jamais de boss invincible)
+    if (m < 0.3) m = 0.3;
     if (m !== 1) d.amount *= m;
     return d;
   }
