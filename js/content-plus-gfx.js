@@ -253,11 +253,11 @@ window.G = window.G || {};
 
     // ---------------------------------------------------------------- 7. PALAIS DES MIROIRS
     D('palais_miroirs', make({
-      name: 'Palais des Miroirs', bg: 0x08080e, fog: [16, 48], sky: 0xe0e0ff, ground: 0x2a2a3a, sun: 0xffffff, hemiI: 0.24, sunI: 0.2, dark: 0.45, amb: 'amb_observatoire', mus: 'mus_observatoire',
-      P: { wall: 0xd8d8e8, marble: 0xe8e8f4, floor: 0xc8c8dc, accent: 0xc0a8ff, mirror: 0xa8c8e8, gold: 0xe8c860, outer: 0x0a0a12, doorFrame: 0xe8e8f4, doorWood: 0xb8b8cc, doorBand: 0xe8c860, doorKey: 0xc0a8ff, doorOpen: 0xe0d0ff, secret: 0xf0e8ff },
+      name: 'Palais des Miroirs', bg: 0x08080e, fog: [16, 48], sky: 0xb8b8e0, ground: 0x1a1a2a, sun: 0xe8e0ff, hemiI: 0.1, sunI: 0.08, dark: 0.62, amb: 'amb_observatoire', mus: 'mus_observatoire',
+      P: { wall: 0x9a9ab4, marble: 0xa8a8c0, floor: 0x5a5a78, accent: 0xc0a8ff, mirror: 0x6a8ab8, gold: 0xe8c860, outer: 0x0a0a12, doorFrame: 0xe8e8f4, doorWood: 0xb8b8cc, doorBand: 0xe8c860, doorKey: 0xc0a8ff, doorOpen: 0xe0d0ff, secret: 0xf0e8ff },
       layouts: ['galerie_glaces', 'labyrinthe', 'salle_bal', 'kaleidoscope'], gens: ['pillars', 'scatter', 'ring', 'islands'], wallH: 4.2, door: 'voile', pulse: { amp: 0.2, speed: 1.2 },
       parts: [[30, 0xe8e0ff, 0.06, 'stars', { op: 0.8 }], [14, 0xc0a8ff, 0.07, 'spores', { op: 0.6 }]],
-      floor(g, w, h, rnd, K, P) { g.fillStyle = K.css(P.floor); g.fillRect(0, 0, w, h); K.P2.tiles(g, w, h, 10, 0xdcdcec, 0xb4b4cc, 0x8a8aa8, rnd, 0.06); K.P2.noise(g, w, h, rnd, 200, [0xc0a8ff, 0x9ae0ff, 0xffd0f0], 2, 4, 0.35); K.P2.vignette(g, w, h, 0.4); },
+      floor(g, w, h, rnd, K, P) { g.fillStyle = K.css(P.floor); g.fillRect(0, 0, w, h); K.P2.tiles(g, w, h, 10, 0x7a7a9c, 0x5e5e80, 0x34344c, rnd, 0.06); K.P2.noise(g, w, h, rnd, 200, [0xc0a8ff, 0x9ae0ff, 0xffd0f0], 2, 4, 0.35); K.P2.vignette(g, w, h, 0.4); },
       props(K, P) {
         const mirror = (ctx, x, z) => { const ry = ctx.rnd() * K.PI; ctx.add(K.G_BOX, P.gold, [x, 1.6, z], [1.7, 3.2, 0.2], [0, ry, 0]); ctx.glow(K.G_BOX, P.mirror, [x, 1.6, z], [1.4, 2.8, 0.24], [0, ry, 0]); ctx.add(K.G_BOX, P.marble, [x, 0.12, z], [1.9, 0.24, 0.6], [0, ry, 0]); ctx.obs(x, z, 0.85, 0.85); };
         const column = (ctx, x, z) => { K.PROP.pillar(ctx, x, z, 0.5, 4, P.marble, P.gold, K.G_CYL6); ctx.glow(K.ringG(0.85, 20), P.accent, [x, 0.04, z], [0.9, 1, 0.9]); };
@@ -274,7 +274,7 @@ window.G = window.G || {};
               if (side !== 'S') { const q = K.wpos(ctx, side, u, 0.62); ctx.glow(K.G_BOX, P.mirror, [q[0], H * 0.5, q[1]], along ? [len * 0.7, H * 0.7, 0.04] : [0.04, H * 0.7, len * 0.7]); ctx.add(K.G_BOX, P.gold, [q[0], H * 0.88, q[1]], along ? [len * 0.8, 0.12, 0.1] : [0.1, 0.12, len * 0.8], null, false); }
             });
           },
-          light(ctx, x, z) { ctx.glow(K.G_OCTA, 0xffffff, [x, 3.2, z], [0.25, 0.35, 0.25]); return K.addLight(ctx, x, 3.2, z, 0xe0d8ff, 1.6, 11, { flicker: 0.08, speed: 3 }); },
+          light(ctx, x, z) { ctx.glow(K.G_OCTA, 0xffffff, [x, 3.2, z], [0.25, 0.35, 0.25]); return K.addLight(ctx, x, 3.2, z, 0xc8b8ff, 1.2, 10, { flicker: 0.08, speed: 3 }); },
         };
       },
     }), 'Marbre blanc, miroirs à cadre d\'or, colonnes, prismes, sol de cristal.');

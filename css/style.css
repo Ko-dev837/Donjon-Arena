@@ -554,6 +554,7 @@ input { -webkit-user-select: text; user-select: text; }
   .act-dash  { --s: 58px; --r: 216px; --b: 164px; }
   .hud-player { width: 214px; padding: 5px 10px 5px 5px; }
   .hud-ava { width: 42px; height: 46px; }
+  .hud-rank { left: 24px; top: -3px; transform: scale(.85); transform-origin: top left; }
   .hud-status { top: calc(var(--sa-t) + 66px); }
   .hud-boss { top: calc(var(--sa-t) + 84px); width: min(420px, 44vw); }
   .hud-info { max-width: calc(100vw - 2 * 230px - 120px); }
