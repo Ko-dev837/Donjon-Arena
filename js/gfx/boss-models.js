@@ -646,5 +646,6 @@ window.G = window.G || {};
     return true;
   }
   registerAll();
-  G.BossModels = { ids: Object.keys(MODELS), humanoid, robed, beast, tentacled, crystalBoss, register: registerAll };
+  G.BossModels = { ids: Object.keys(MODELS), humanoid, robed, beast, tentacled, crystalBoss, register: registerAll,
+    define(id, fn) { MODELS[id] = fn; G.BossModels.ids.push(id); if (G.GFX && G.GFX.registerModel) G.GFX.registerModel('boss', id, fn); } };
 })();

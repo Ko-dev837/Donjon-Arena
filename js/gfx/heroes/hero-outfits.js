@@ -393,6 +393,14 @@ window.G = window.G || {};
 
   const NO = { outline: false };
   const SIDES = [['L', 1], ['R', -1]];
+  /** poids de peau « suit les jambes » d'un tissu qui pend (yTop → yBot, repère de l'os porteur) :
+   *  la moitié gauche suit la cuisse gauche, la droite la droite, de plus en plus vers le bas → les jambes ne traversent plus le tissu */
+  function legFollow(X, yTop, yBot, max) {
+    const m = X.m, span = Math.max(0.02, yTop - yBot);
+    const at = yTop - span * 0.4, range = -span * 0.5, xr = Math.max(0.03, (m.hipX || m.hiW * 0.5) * 1.1), mx = max || 0.9;
+    return [{ to: 'legL', at, range, max: mx, sx: 1, xr }, { to: 'legR', at, range, max: mx, sx: -1, xr }];
+  }
+  const withB = (o, bl) => Object.assign({}, o || {}, { blend: bl });
 
   // =================================================================
   //  BIBLIOTHÈQUE DE PIÈCES
@@ -566,16 +574,17 @@ window.G = window.G || {};
     X.add('spine', 'cloth', GE.shell({ rt: 1.08, th: 0.18, n: 14 }), col, [0, m.spineLen * 0.5, 0], [m.waW * 2.2, m.spineLen * 1.12, m.waD * 2.3]);
     // jupe haute (hanches) : légère, plis qui s'ouvrent vers le bas, fente avant
     const gap = o.gap == null ? 0.7 : o.gap;
+    const BL = legFollow(X, 0.08 * k, 0.08 * k - skirtH);
     X.add('hips', 'cloth', GE.shell({ span: TAU - gap, back: true, rt: 0.62, rm: 0.82, th: 0.08, pl: 9, pa: 0.09, n: 20, jag: o.jag || 0 }), col,
-      [0, 0.08 * k - skirtH * 0.5, -0.01 * k], [m.hiW * 2 * (1.25 + 0.55 * len), skirtH, m.hiD * 2 * (1.35 + 0.5 * len)]);
+      [0, 0.08 * k - skirtH * 0.5, -0.01 * k], [m.hiW * 2 * (1.25 + 0.55 * len), skirtH, m.hiD * 2 * (1.35 + 0.5 * len)], null, { blend: BL });
     // sous-robe visible par la fente
     X.add('hips', 'cloth2', GE.shell({ span: 1.5, rt: 0.64, rm: 0.84, th: 0.08, pl: 3, pa: 0.05, n: 8 }), o.under || c.second,
-      [0, 0.06 * k - skirtH * 0.5, 0.0], [m.hiW * 2 * (1.17 + 0.5 * len), skirtH * 0.97, m.hiD * 2 * (1.25 + 0.45 * len)]);
+      [0, 0.06 * k - skirtH * 0.5, 0.0], [m.hiW * 2 * (1.17 + 0.5 * len), skirtH * 0.97, m.hiD * 2 * (1.25 + 0.45 * len)], null, { blend: BL });
     // ourlet brodé
     if (o.hem !== false) X.add('hips', o.hemLayer || 'cloth2', GE.shell({ span: TAU - gap, back: true, rt: 1, th: 0.12, pl: 9, pa: 0.09, n: 20 }), o.hem || c.trim,
-      [0, 0.08 * k - skirtH + 0.025 * k, -0.01 * k], [m.hiW * 2 * (1.25 + 0.55 * len) * 1.02, 0.045 * k, m.hiD * 2 * (1.35 + 0.5 * len) * 1.02]);
+      [0, 0.08 * k - skirtH + 0.025 * k, -0.01 * k], [m.hiW * 2 * (1.25 + 0.55 * len) * 1.02, 0.045 * k, m.hiD * 2 * (1.35 + 0.5 * len) * 1.02], null, { blend: BL });
     // bandes verticales de bordure le long de la fente
-    for (const [, sg] of SIDES) X.add('hips', 'cloth2', GE.box(), o.hem || c.trim, [sg * Math.sin(gap / 2) * m.hiW * (1.2 + 0.5 * len), 0.06 * k - skirtH * 0.5, Math.cos(gap / 2) * m.hiD * (1.3 + 0.48 * len)], [0.03 * k, skirtH * 0.96, 0.012 * k], [0.05 * len, sg * gap / 2, 0], NO);
+    for (const [, sg] of SIDES) X.add('hips', 'cloth2', GE.box(), o.hem || c.trim, [sg * Math.sin(gap / 2) * m.hiW * (1.2 + 0.5 * len), 0.06 * k - skirtH * 0.5, Math.cos(gap / 2) * m.hiD * (1.3 + 0.48 * len)], [0.03 * k, skirtH * 0.96, 0.012 * k], [0.05 * len, sg * gap / 2, 0], withB(NO, BL));
     // col en V / encolure brodée
     X.add('chest', 'cloth2', GE.box(), o.hem || c.trim, [m.chW * 0.18, m.neckY * 0.72, m.chD * 1.12], [0.03 * k, m.neckY * 0.6, 0.012 * k], [-0.15, 0, 0.35], NO);
     X.add('chest', 'cloth2', GE.box(), o.hem || c.trim, [-m.chW * 0.18, m.neckY * 0.72, m.chD * 1.12], [0.03 * k, m.neckY * 0.6, 0.012 * k], [-0.15, 0, -0.35], NO);
@@ -596,12 +605,13 @@ window.G = window.G || {};
     const len = (o.len || 0.55) * (m.thighL + 0.1 * k);
     const W = o.w || m.hiW * 1.3;
     // pan avant + arrière (sur les hanches, au-dessus de la ceinture)
-    X.add('hips', 'cloth', GE.panel({ cv: 0.1, fl: 1.05, th: 0.03, n: 6, jag: o.jag || 0, tip: o.tip || 0 }), col, [0, 0.07 * k, m.hiD * 1.14], [W, len + 0.07 * k, W]);
-    X.add('hips', 'cloth', GE.panel({ cv: 0.1, fl: 1.05, th: 0.03, n: 6, jag: o.jag || 0, tip: o.tip || 0 }), shade(col, -0.08), [0, 0.07 * k, -m.hiD * 1.14], [W, len + 0.07 * k, W], [0, PI, 0]);
+    const TB = legFollow(X, 0.07 * k, -len, 0.85);
+    X.add('hips', 'cloth', GE.panel({ cv: 0.1, fl: 1.05, th: 0.03, n: 6, jag: o.jag || 0, tip: o.tip || 0 }), col, [0, 0.07 * k, m.hiD * 1.14], [W, len + 0.07 * k, W], null, { blend: TB });
+    X.add('hips', 'cloth', GE.panel({ cv: 0.1, fl: 1.05, th: 0.03, n: 6, jag: o.jag || 0, tip: o.tip || 0 }), shade(col, -0.08), [0, 0.07 * k, -m.hiD * 1.14], [W, len + 0.07 * k, W], [0, PI, 0], { blend: TB });
     // galon
     if (o.trim !== false) {
-      X.add('hips', 'cloth2', GE.box(), o.trim || c.trim, [0, 0.07 * k - len - 0.05 * k, m.hiD * 1.14 + 0.022 * k], [W * 1.02, 0.03 * k, 0.012 * k], [0.08, 0, 0], NO);
-      for (const [, sg] of SIDES) X.add('hips', 'cloth2', GE.box(), o.trim || c.trim, [sg * W * 0.48, 0.07 * k - len * 0.5, m.hiD * 1.14 + 0.02 * k], [0.022 * k, len, 0.012 * k], [0.06, 0, 0], NO);
+      X.add('hips', 'cloth2', GE.box(), o.trim || c.trim, [0, 0.07 * k - len - 0.05 * k, m.hiD * 1.14 + 0.022 * k], [W * 1.02, 0.03 * k, 0.012 * k], [0.08, 0, 0], withB(NO, TB));
+      for (const [, sg] of SIDES) X.add('hips', 'cloth2', GE.box(), o.trim || c.trim, [sg * W * 0.48, 0.07 * k - len * 0.5, m.hiD * 1.14 + 0.02 * k], [0.022 * k, len, 0.012 * k], [0.06, 0, 0], withB(NO, TB));
     }
     if (o.emblem) P.emblem(X, 'hips', o.emblem, [0, 0.07 * k - len * 0.42, m.hiD * 1.14 + 0.03 * k], 0.11 * k, o.emblemCol || c.trim);
   };
@@ -1503,8 +1513,9 @@ window.G = window.G || {};
     } else if (robe) {
       P.robe(X, c.main, { len: r.robeLen || 1, jag: r.robeJag || 0, hem: trim, under: c.second, gap: (r.robeLen || 1) < 0.8 ? 1.0 : 0.7 });
       if (r.surplice) { // surplis à longs pans (nécro) : panneaux déchiquetés devant/derrière
-        X.add('chest', 'cloth2', GE.panel({ cv: 0.12, fl: 1.0, th: 0.04, n: 5, jag: 0.06 }), c.cloth2 || c.second, [0, m.neckY * 0.95, m.chD * 1.12], [m.chW * 1.0, m.neckY + m.spineLen + 0.55 * k, m.chW], [0.06, 0, 0]);
-        X.add('chest', 'cloth2', GE.panel({ cv: 0.12, fl: 1.1, th: 0.04, n: 5, jag: 0.08 }), c.cloth2 || c.second, [0, m.neckY * 0.95, -m.chD * 1.12], [m.chW * 1.1, m.neckY + m.spineLen + 0.7 * k, m.chW * 1.1], [-0.05, PI, 0]);
+        const SB = legFollow(X, -m.spineLen * 0.85, m.neckY * 0.95 - (m.neckY + m.spineLen + 0.7 * k), 0.8);
+        X.add('chest', 'cloth2', GE.panel({ cv: 0.12, fl: 1.0, th: 0.04, n: 5, jag: 0.06 }), c.cloth2 || c.second, [0, m.neckY * 0.95, m.chD * 1.12], [m.chW * 1.0, m.neckY + m.spineLen + 0.55 * k, m.chW], [0.06, 0, 0], { blend: SB });
+        X.add('chest', 'cloth2', GE.panel({ cv: 0.12, fl: 1.1, th: 0.04, n: 5, jag: 0.08 }), c.cloth2 || c.second, [0, m.neckY * 0.95, -m.chD * 1.12], [m.chW * 1.1, m.neckY + m.spineLen + 0.7 * k, m.chW * 1.1], [-0.05, PI, 0], { blend: SB });
       }
     } else if (coat4) {
       // manteau ouvert à 4 pans (élémentaliste) : buste ajusté + col haut + 4 pans qui flottent (asymétrique)
@@ -1515,7 +1526,8 @@ window.G = window.G || {};
       P.collar(X, 'high', coat);
       const tl = (m.thighL + m.shinL) * 0.85;
       const tails = [[0.62, 0.3, coat], [-0.62, -0.3, shade(coat, -0.08)], [2.25, 0.0, shade(coat, -0.12)], [-2.25, 0.0, shade(coat, -0.18)]];
-      tails.forEach(([a, tw, col], i) => X.add('hips', 'cloth', GE.panel({ cv: 0.18, fl: 1.25, th: 0.04, n: 4, tip: 0.12 }), col, [Math.sin(a) * m.hiW * 1.12, 0.1 * k, Math.cos(a) * m.hiD * 1.15], [m.hiW * 1.05, tl * (i < 2 ? 0.92 : 1.0), m.hiW * 1.05], [Math.cos(a) * 0.1, a + tw * 0.2, 0]));
+      const CB = legFollow(X, 0.1 * k, 0.1 * k - tl, 0.88);
+      tails.forEach(([a, tw, col], i) => X.add('hips', 'cloth', GE.panel({ cv: 0.18, fl: 1.25, th: 0.04, n: 4, tip: 0.12 }), col, [Math.sin(a) * m.hiW * 1.12, 0.1 * k, Math.cos(a) * m.hiD * 1.15], [m.hiW * 1.05, tl * (i < 2 ? 0.92 : 1.0), m.hiW * 1.05], [Math.cos(a) * 0.1, a + tw * 0.2, 0], { blend: CB }));
       if (r.fur4) P.collar(X, 'fur', c.fur);
     }
 
@@ -1532,8 +1544,8 @@ window.G = window.G || {};
     if (r.skirt === 'tabard') P.tabard(X, c.main, { emblem: r.emblem, emblemCol: trim, trim, jag: r.tabardJag || 0, len: r.tabardLen || 0.62 });
     else if (r.skirt === 'coat' || r.skirt === 'longCoat') {
       const L = r.skirt === 'longCoat' ? 1.35 : 0.72, col = r.skirt === 'longCoat' ? c.main : shade(c.leather, -0.05), lay = r.skirt === 'longCoat' ? 'cloth' : 'leather';
-      for (const [, sg] of SIDES) X.add('hips', lay, GE.panel({ cv: 0.12, fl: 1.1, th: 0.06, n: 4 }), col, [sg * m.hiW * 0.6, 0.06 * k, m.hiD * 0.98], [m.hiW * 0.95, m.thighL * L * 0.85, m.hiW * 0.95], [0.08, sg * 0.4, 0]);
-      for (const [, sg] of SIDES) X.add('hips', lay, GE.panel({ cv: 0.12, fl: 1.1, th: 0.06, n: 4 }), shade(col, -0.1), [sg * m.hiW * 0.5, 0.06 * k, -m.hiD * 0.98], [m.hiW * 1.0, m.thighL * L, m.hiW * 1.0], [-0.08, PI - sg * 0.3, 0]);
+      for (const [, sg] of SIDES) X.add('hips', lay, GE.panel({ cv: 0.12, fl: 1.1, th: 0.06, n: 4 }), col, [sg * m.hiW * 0.6, 0.06 * k, m.hiD * 0.98], [m.hiW * 0.95, m.thighL * L * 0.85, m.hiW * 0.95], [0.08, sg * 0.4, 0], { blend: legFollow(X, 0.06 * k, 0.06 * k - m.thighL * L, 0.88) });
+      for (const [, sg] of SIDES) X.add('hips', lay, GE.panel({ cv: 0.12, fl: 1.1, th: 0.06, n: 4 }), shade(col, -0.1), [sg * m.hiW * 0.5, 0.06 * k, -m.hiD * 0.98], [m.hiW * 1.0, m.thighL * L, m.hiW * 1.0], [-0.08, PI - sg * 0.3, 0], { blend: legFollow(X, 0.06 * k, 0.06 * k - m.thighL * L, 0.88) });
     } else if (r.skirt === 'sashTails') {
       for (const [, sg] of SIDES) X.add('hips', 'cloth2', GE.panel({ cv: 0.1, fl: 0.8, th: 0.06, n: 3, tip: 0.25 }), sg > 0 ? c.second : shade(c.second, -0.15), [sg * m.hiW * 0.4, 0.04 * k, -m.hiD * 1.05], [m.hiW * 0.55, m.thighL * 0.9, m.hiW * 0.55], [-0.1, PI, -sg * 0.08]);
     }

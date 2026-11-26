@@ -385,7 +385,9 @@ window.G = window.G || {};
             let rest = 1;
             for (let b = 0; b < bl.length && b < 2; b++) {
               const B = bl[b];
-              const w = Math.min(B.max != null ? B.max : 0.85, sstep(0.5 + 0.5 * (ly - B.at) / B.range));
+              let w = Math.min(B.max != null ? B.max : 0.85, sstep(0.5 + 0.5 * (ly - B.at) / B.range));
+              // fondu latéral (tissus qui suivent la jambe de leur côté : robes, pans, tabards)
+              if (B.sx) { const lx = eb[0] * x + eb[4] * y + eb[8] * z + eb[12]; w *= sstep(0.5 + 0.5 * lx * B.sx / B.xr); }
               if (w > 0.001) { si[q4 + 1 + b] = blIdx[b]; sw[q4 + 1 + b] = w; rest -= w; }
             }
             sw[q4] = Math.max(0, rest);
@@ -633,7 +635,7 @@ window.G = window.G || {};
       };
       if (o.blend) {
         const arr = Array.isArray(o.blend) ? o.blend : [o.blend];
-        piece.blend = arr.filter(x => x && this.bones[x.to] && x.range).map(x => ({ to: x.to, at: num(x.at, 0), range: x.range, max: x.max }));
+        piece.blend = arr.filter(x => x && this.bones[x.to] && x.range).map(x => ({ to: x.to, at: num(x.at, 0), range: x.range, max: x.max, sx: x.sx || 0, xr: x.xr || 0.05 }));
         if (!piece.blend.length) piece.blend = null;
       }
       this.pieces.push(piece);
@@ -702,7 +704,7 @@ window.G = window.G || {};
       mixs(p.bone); mixs(p.layer); mixn(gid(p.g)); mixn(p.c);
       for (let i = 0; i < 3; i++) { mixn(p.p[i]); mixn(p.s[i]); mixn(p.r[i]); }
       mixn(p.ol ? 1 : 0); mixn(p.olk); mixn(p.uv == null ? -1 : p.uv); mixn(p.flat ? 1 : 0); mixn(p.ao === false ? 1 : 0);
-      if (p.blend) for (const b of p.blend) { mixs(b.to); mixn(b.at); mixn(b.range); mixn(b.max == null ? -1 : b.max); }
+      if (p.blend) for (const b of p.blend) { mixs(b.to); mixn(b.at); mixn(b.range); mixn(b.max == null ? -1 : b.max); mixn(b.sx || 0); mixn(b.xr || 0); }
     }
     return h.toString(36) + '_' + R.pieces.length;
   }

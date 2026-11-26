@@ -1177,5 +1177,5 @@ window.G = window.G || {};
   };
   Object.keys(MODEL5).forEach((id) => { const [k, o] = MODEL5[id]; reg(id, (b) => KIND[k](b, Object.assign({}, o))); });
 
-  G.MonsterModels = { ids: REG, anim, model5: MODEL5, archetypes: KIND };
+  G.MonsterModels = { ids: REG, anim, model5: MODEL5, archetypes: KIND, define(id, kind, o) { if (!KIND[kind]) kind = 'human'; MODEL5[id] = [kind, o]; reg(id, (b) => KIND[kind](b, Object.assign({}, o))); } };
 })();

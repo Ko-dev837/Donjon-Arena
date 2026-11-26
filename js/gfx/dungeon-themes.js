@@ -2091,7 +2091,19 @@ window.G = window.G || {};
   });
   if (!(G.GFX && G.GFX.registerTheme)) console.warn('[dungeon-themes] G.GFX.registerTheme absent : architectures non enregistrées');
 
+  // ---- ajout d'architectures depuis un autre fichier (donjons supplémentaires) : mêmes outils que ci-dessus ----
+  const KIT = { T, PI, TAU, HPI, clamp, shade, mix, jit, css, lift, PROP, P2, TH, wpos, runBlocks, addLight, particles, dynGroup, statue, humanoid, eyes, torus, ringG,
+    G_BOX, G_CYL, G_CYL6, G_CYL4, G_CONE, G_CONE4, G_SPH, G_SPH_LO, G_HEMI, G_DODE, G_ICO, G_OCTA, G_TETRA, G_PLANE, G_FLAT, G_DISC };
+  function defineTheme(id, mk, descr) {
+    if (DEFS[id]) return false;
+    let def; try { def = mk(KIT); } catch (e) { console.error('[dungeon-themes] définition ' + id + ' échouée', e); return false; }
+    DEFS[id] = def; IDS.push(id); DESCR[id] = descr || '';
+    def.theme.layouts = def.layouts.slice(); def.theme.archi = id; def.theme.desc = DESCR[id];
+    if (G.GFX && G.GFX.registerTheme) G.GFX.registerTheme(id, { theme: def.theme, layouts: def.layouts.slice(), build: (opts) => safeBuild(id, opts) });
+    return true;
+  }
   G.DungeonThemes = {
+    define: defineTheme,
     ids: () => IDS.slice(),
     has: (id) => !!DEFS[id],
     layouts: (id) => (DEFS[id] ? DEFS[id].layouts.slice() : []),

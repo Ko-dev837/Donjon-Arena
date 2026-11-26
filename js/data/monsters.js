@@ -728,6 +728,8 @@ window.G = window.G || {};
     get, list, scale, makeElite, rollAffixes, affixCountForRank, damageMult, absorb, rareRoll, groupSize,
     population, roll, soundNames, soundFamilies, CATEGORY_WEIGHT,
     rankIndex: rIdx,
+    // ajout de contenu (donjons supplémentaires) : mêmes règles que la population v5
+    define(...args) { const d = M(...args); MONSTERS[d.id] = MONSTERS[d.id] || d; G.MONSTERS[d.id] = MONSTERS[d.id]; return MONSTERS[d.id]; },
   });
 
   // Hook de mise à l'échelle (CONTRAT §2 : enemyStats(def, {rank, modifiers, run}))

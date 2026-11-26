@@ -468,6 +468,8 @@ window.G = window.G || {};
   Object.keys(MON).forEach(k => { if (!G.MONSTERS[k]) G.MONSTERS[k] = MON[k]; });
 
   G.BOSSES = Object.assign(G.BOSSES || {}, BOSSES);
-  G.BossInfo = { rankTable: RK, addDefs: MON, registerItems, materials: MATS, finals: Object.keys(BOSSES).filter(k => BOSSES[k].exclusive && !BOSSES[k].miniboss), minis: Object.keys(BOSSES).filter(k => BOSSES[k].exclusive && BOSSES[k].miniboss) };
+  G.BossInfo = { rankTable: RK, addDefs: MON, registerItems, materials: MATS, fin, mini, PH, ph3, bn,
+    define(kind, id, o) { const b = kind === 'mini' ? mini(id, o) : fin(id, o); G.BOSSES[id] = BOSSES[id]; if (kind !== 'mini') G.BossInfo.finals.push(id); else G.BossInfo.minis.push(id); return b; },
+    addMaterial(id, m) { MATS[id] = m; }, finals: Object.keys(BOSSES).filter(k => BOSSES[k].exclusive && !BOSSES[k].miniboss), minis: Object.keys(BOSSES).filter(k => BOSSES[k].exclusive && BOSSES[k].miniboss) };
   registerItems();
 })();
